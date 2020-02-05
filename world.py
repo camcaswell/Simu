@@ -53,6 +53,9 @@ class World:
 
         self.turn += 1
 
+        if self.turn < 1000 and self.turn%40 == 0:
+            self.abundance -= 1
+
         for _ in range(self.fruit_drops()):
             self.fruits.add(Fruit(self))
 
