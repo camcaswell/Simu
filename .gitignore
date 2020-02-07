@@ -1,3 +1,15 @@
+# Sublime project
+*.sublime-project
+*.sublime-workspace
+
+# Profiling
+profiler.py
+profile_results.csv
+
+# Other
+test.py
+TODO.txt
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
