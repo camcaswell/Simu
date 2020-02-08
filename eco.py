@@ -6,9 +6,9 @@ import util
 class MyBioAssumptions(BioAssumptions):
     # this class is just a container for methods encoding assumptions about how biology works
 
+    # overwrite methods to change how biology works in your sim
     @classmethod
     def move_cost(cls, simon, dist):
-        # overwrite methods to change how biology works in your sim
         return 0.1 * simon.mass * dist
 
     @classmethod

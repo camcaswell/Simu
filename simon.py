@@ -22,12 +22,13 @@ class Simon:
     MUTABILITY = {
         'per_simon': .008,
         'per_food': .008,
-        'wander_effort': .015,
+        'wander_effort': .008,
         'mass': .008,
         'reproduction_threshold': .008,
-        'energy_inheritance': .008
+        'energy_inheritance': .008,
     }
 
+    # upper and lower bounds past which values for the trait wouldn't make sense
     LIMITS = {
         'per_simon': (0,INF),
         'per_food': (0,INF),
