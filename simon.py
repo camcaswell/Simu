@@ -1,5 +1,5 @@
 import util
-import biology as bio
+from biology import BioAssumptions
 
 from random import random, gauss
 from math import inf as INF
@@ -43,9 +43,8 @@ class Simon:
 
     #NITTY-GRITTY
 
-    def __init__(self, world, energy=0, loc=None, age=0, max_age=None, traits=None):
+    def __init__(self, world, energy=0, loc=None, age=0, max_age=None, traits=None, bio=BioAssumptions):
 
-        world.track(self)
         self.world = world
 
         if loc is None:
@@ -62,12 +61,13 @@ class Simon:
         self.traits = traits
         self.children = set()
         self.birth = world.turn
+        self.bio = bio
 
         # derived traits
-        self.reach = bio.derive_reach(self.mass)
-        self.max_speed = bio.derive_max_speed(self.mass)
-        self.max_energy = bio.derive_max_energy(self.mass)
-        self.metabolic_upkeep = bio.derive_metabolic_upkeep(self.mass)
+        self.reach = self.bio.derive_reach(self)
+        self.max_speed = self.bio.derive_max_speed(self)
+        self.max_energy = self.bio.derive_max_energy(self)
+        self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
 
 
 
@@ -98,9 +98,10 @@ class Simon:
         if self.energy >= self.reproduction_threshold:
             self.reproduce()
         else:
-            fruit_options = self._visible_fruit()
-            if fruit_options:
-                (rho,phi),nearest = fruit_options[0]
+            food_options = self._visible_food()
+            if food_options:
+                rho,nearest = food_options[0]
+                phi = util.rel_phi(self.loc, nearest.loc)
                 if rho <= self.max_speed:
                     self._move(rho, phi)
                     self.eat(nearest)
@@ -116,19 +117,20 @@ class Simon:
         self._move(rho, phi)
 
 
-    def eat(self, fruit):
-        assert util.dist2(self.loc, fruit.loc) <= self.reach
-        self.energy += fruit.amount
-        self.world.fruits.remove(fruit)
+    def eat(self, food):
+        assert util.dist2(self.loc, food.loc) <= self.reach
+        self.energy += food.amount
+        self.world.avail_food.remove(food)
 
 
     def reproduce(self):
         energy_passed_on = min(self.energy, self.energy_inheritance * self.max_energy)
         self.energy -= energy_passed_on
         new_traits = self._clone()
-        Subspecies = type(self)     #so child is the same subclass
+        Subspecies = type(self)     # so that child is of the same subclass
         child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_passed_on)
         self.children.add(child)
+        self.world.add_simon(child)
 
 
     #HELPERS
@@ -138,7 +140,7 @@ class Simon:
         dx,dy = util.p2c((rho, phi))
         x,y = self.loc
         self.loc = (x+dx, y+dy)
-        self.energy -= bio.move_cost(self.mass, rho)
+        self.energy -= self.bio.move_cost(self, rho)
 
     def _clone(self):
         new_traits = {}
@@ -165,10 +167,10 @@ class Simon:
         found.sort(key = lambda e: e[0][0])
         return found
 
-    def _visible_fruit(self):
-        #returns fruit within this simon's perception range and it's distance
+    def _visible_food(self):
+        # returns food within this simon's perception range and it's distance
         found = []
-        for fruit in self.world.fruits:
+        for food in self.world.avail_food:
             rho,phi = util.rel_pol(self.loc, fruit.loc)
             if rho <= self.per_fruit:
                 found.append(((rho,phi), fruit))

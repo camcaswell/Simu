@@ -1,11 +1,9 @@
-from util import *
-from simon import *
+from simon import Simon
 
-#import networkx as nx
-from random import random, randint, shuffle, gauss
+from random import random, randint, sample, gauss
 from math import inf as INF
 
-class Fruit:
+class Food:
     def __init__(self, world, loc=None, kind=None, amount=10, good_for=10):
         self.world = world
         if not loc:
@@ -18,52 +16,49 @@ class Fruit:
 
 class World:
 
-    ABUNDANCE = 50      # max fruit per 100^2 area
-    SIGMA = 0.7         # standard deviation of fruit drops
-    SIZE = 100          # side length of square in which fruit can drop
+    SIZE = 100                      # side length of square in which food can drop
 
-
-    def __init__(self, size=SIZE, abundance=ABUNDANCE, sigma=SIGMA, simons=None):
-        if not simons:
+    def __init__(self, size=SIZE, food_drops=[], simons=[]):
+        if simons is None:
             simons = set()
         self.size = size
-        self.abundance = abundance
-        self.sigma = sigma
+        self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
+        self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
+        self.avail_food = []            # food that actually exists in the world
         self.simons = simons
-        self.all_simons = set()
-        self.fruits = set()
         self.turn = 0
 
-    def create_simons(self, count=10):
-        for _ in range(count):
-            Simon(self, energy=10)
+    def add_simons(self, simons):
+        self.simons += simons
 
-    def track(self, simon):
-        self.simons.add(simon)
+    def add_simon(self, simon):
+        self.simons.append(simon)
         #self.all_simons.add(simon)
 
     def untrack(self, simon):
         self.simons.remove(simon)
 
-    def fruit_drops(self):
-        mu = self.abundance * (100**2/self.size**2)
-        return int(gauss(mu, self.sigma))
+    def register_food_drop(self, food=None, mu=15, cv=0.2):
+        if food is None:
+            food = Food
+        self.food_drops.append((food, mu, cv))
+
+    def drop_food(self):
+        for food, mu, cv in self.food_drops:
+            adjusted_mean = self.abundance * mu
+            drop_count = int(gauss(adjusted_mean, adjusted_mean*cv))
+            new_drops = [food(self) for _ in range(drop_count)]
+            self.avail_food += new_drops
+
+    def remove_expired(self):
+        self.avail_food = [f for f in self.avail_food if f.expiration > self.turn]
+
 
     def step(self):
-
         self.turn += 1
-
-        if self.turn < 1000 and self.turn%40 == 0:
-            self.abundance -= 1
-
-        for _ in range(self.fruit_drops()):
-            self.fruits.add(Fruit(self))
-
-        self.fruits = {f for f in self.fruits if f.expiration > self.turn}
-
-        simons = list(self.simons)
-        shuffle(simons)                 # random action order to make it fair
-        for simon in simons:
+        self.remove_expired()
+        self.drop_food()    
+        for simon in sample(self.simons, len(self.simons)):   # random action order to make it fair
             simon.act()
             simon.age += 1
             if simon.age > simon.max_age or simon.energy <= 0:
@@ -83,12 +78,19 @@ class World:
 
 def run():
     world = World()
-    world.create_simons()
-    while world.turn < 50000:
+    world.register_food_drop()
+
+    # spreading food
+    for _ in range(10):
+        world.step()
+    world.turn = 0
+
+    world.add_simons([Simon(world) for _ in range(40)])
+    print(world.simons)
+
+    while world.turn < 1000 and len(world.simons) > 0:
         world.step()
         print(f"{world.turn}: {len(world.simons)}")
-        if len(world.simons) == 0:
-            break
 
     world.report()
 
