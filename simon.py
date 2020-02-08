@@ -9,26 +9,28 @@ class Simon:
     # default starting values
     TRAITS = {
         'per_simon': 10,                    # need constraint (complexity?)
-        'per_fruit': 10,
-        'wander_effort': 0.5,               # percent of max speed Simon moves at when no goal in sight
+        'per_food': 10,
+        'wander_effort': 0.9,               # percent of max speed Simon moves at when no goal in sight
 
-        'mass': 35,
+        'mass': 10,
         'reproduction_threshold': 0.1,      # percent of max energy at which Simon will reproduce
         'energy_inheritance': 0.15,         # percent of max energy passed on to each child
     }
 
+
     # coefficients of variation (SD/MEAN)
     MUTABILITY = {
         'per_simon': .008,
-        'per_fruit': .008,
-
+        'per_food': .008,
+        'wander_effort': .015,
         'mass': .008,
         'reproduction_threshold': .008,
+        'energy_inheritance': .008
     }
 
     LIMITS = {
         'per_simon': (0,INF),
-        'per_fruit': (0,INF),
+        'per_food': (0,INF),
         'wander_effort': (0,1),
         'mass': (0,INF),
         'reproduction_threshold': (0,1),
@@ -38,7 +40,7 @@ class Simon:
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
     # number of turns before the Simon dies
-    MAX_AGE = 20
+    MAX_AGE = 50
 
 
     #NITTY-GRITTY
@@ -158,7 +160,7 @@ class Simon:
         self.world.untrack(self)
 
     def _visible_simons(self):
-        #returns other simons within this simon's perception range and it's distance
+        # returns other simons within this simon's perception range and it's distance
         found = []
         for simon in self.world.simons:
             rho,phi = util.rel_pol(self.loc, simon.loc)
