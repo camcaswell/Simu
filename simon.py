@@ -163,19 +163,19 @@ class Simon:
         # returns other simons within this simon's perception range and it's distance
         found = []
         for simon in self.world.simons:
-            rho,phi = util.rel_pol(self.loc, simon.loc)
+            rho = util.dist2(self.loc, simon.loc)
             if rho <= self.per_simon:
-                found.append(((rho,phi), simon))
-        found.sort(key = lambda e: e[0][0])
+                found.append((rho, simon))
+        found.sort(key = lambda e: e[0])
         return found
 
     def _visible_food(self):
         # returns food within this simon's perception range and it's distance
         found = []
         for food in self.world.avail_food:
-            rho,phi = util.rel_pol(self.loc, fruit.loc)
-            if rho <= self.per_fruit:
-                found.append(((rho,phi), fruit))
-        found.sort(key = lambda e: e[0][0])
+            rho = util.dist2(self.loc, food.loc)
+            if rho <= self.per_food:
+                found.append((rho, food))
+        found.sort(key = lambda e: e[0])
         return found
 

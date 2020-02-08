@@ -1,4 +1,4 @@
-from math import sqrt, atan2, cos, sin, pi
+from math import hypot, atan2, cos, sin, pi
 from random import uniform
 
 # arithmetic
@@ -10,7 +10,9 @@ def cbrt(n):
 #geometry
 
 def dist2(c1, c2):
-    return sqrt((c1[0]-c2[0])**2 + (c1[1]-c2[1])**2)
+    x1,y1 = c1
+    x2,y2 = c2
+    return hypot(x2-x1, y2-y1)
 
 def c2p(c):
     x,y = c
@@ -29,6 +31,11 @@ def rel_pol(me, other):
     x1,y1 = me
     x2,y2 = other
     return c2p((x2-x1, y2-y1))
+
+def rel_phi(me, other):
+    x1,y1 = me
+    x2,y2 = other
+    return atan2(y2-y1, x2-x1)
 
 def rand_phi():
     return uniform(-pi, pi)
