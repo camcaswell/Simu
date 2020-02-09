@@ -16,7 +16,7 @@ def dist2(c1, c2):
 
 def c2p(c):
     x,y = c
-    rho = sqrt(x**2 + y**2)
+    rho = hypot(x, y)
     phi = atan2(y, x)
     return (rho,phi)
 
