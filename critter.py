@@ -4,23 +4,23 @@ from biology import BioAssumptions
 from random import random, gauss
 from math import inf as INF
 
-class Simon:
+class Critter:
 
     # default starting values
     TRAITS = {
-        'per_simon': 10,                    # need constraint (complexity?)
+        'per_critter': 10,                    # need constraint (complexity?)
         'per_food': 10,
-        'wander_effort': 0.9,               # percent of max speed Simon moves at when no goal in sight
+        'wander_effort': 0.9,               # percent of max speed Critter moves at when no goal in sight
 
         'mass': 10,
-        'reproduction_threshold': 0.1,      # percent of max energy at which Simon will reproduce
+        'reproduction_threshold': 0.1,      # percent of max energy at which Critter will reproduce
         'energy_inheritance': 0.15,         # percent of max energy passed on to each child
     }
 
 
     # coefficients of variation (SD/MEAN)
     MUTABILITY = {
-        'per_simon': .008,
+        'per_critter': .008,
         'per_food': .008,
         'wander_effort': .008,
         'mass': .008,
@@ -30,7 +30,7 @@ class Simon:
 
     # upper and lower bounds past which values for the trait wouldn't make sense
     LIMITS = {
-        'per_simon': (0,INF),
+        'per_critter': (0,INF),
         'per_food': (0,INF),
         'wander_effort': (0,1),
         'mass': (0,INF),
@@ -40,7 +40,7 @@ class Simon:
 
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
-    # number of turns before the Simon dies
+    # number of turns before the Critter dies
     MAX_AGE = 50
 
 
@@ -133,7 +133,7 @@ class Simon:
         Subspecies = type(self)     # so that child is of the same subclass
         child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_passed_on)
         self.children.add(child)
-        self.world.add_simon(child)
+        self.world.add_critter(child)
 
 
     #HELPERS
@@ -160,18 +160,18 @@ class Simon:
     def _die(self):
         self.world.untrack(self)
 
-    def _visible_simons(self):
-        # returns other simons within this simon's perception range and it's distance
+    def _visible_critters(self):
+        # returns other critters within this critter's perception range and it's distance
         found = []
-        for simon in self.world.simons:
-            rho = util.dist2(self.loc, simon.loc)
-            if rho <= self.per_simon:
-                found.append((rho, simon))
+        for critter in self.world.critters:
+            rho = util.dist2(self.loc, critter.loc)
+            if rho <= self.per_critter:
+                found.append((rho, critter))
         found.sort(key = lambda e: e[0])
         return found
 
     def _visible_food(self):
-        # returns food within this simon's perception range and it's distance
+        # returns food within this critter's perception range and it's distance
         found = []
         for food in self.world.avail_food:
             rho = util.dist2(self.loc, food.loc)

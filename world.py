@@ -1,10 +1,10 @@
-from simon import Simon
+from critter import Critter
 
 from random import random, randint, sample, gauss
 from math import inf as INF
 
 class Food:
-    def __init__(self, world, loc=None, kind=None, amount=10, good_for=10):
+    def __init__(self, world, loc=None, kind='default', amount=10, good_for=10):
         self.world = world
         if not loc:
             loc = (random()*world.size, random()*world.size)
@@ -18,25 +18,26 @@ class World:
 
     SIZE = 100                      # side length of square in which food can drop
 
-    def __init__(self, size=SIZE, food_drops=[], simons=[]):
-        if simons is None:
-            simons = set()
+    def __init__(self, size=SIZE, food_drops=[], critters=[]):
+        if critters is None:
+            critters = set()
         self.size = size
         self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
         self.avail_food = []            # food that actually exists in the world
-        self.simons = simons
+        self.critters = critters
         self.turn = 0
+        self.critter_total = 0
 
-    def add_simons(self, simons):
-        self.simons += simons
+    def add_critters(self, critters):
+        self.critters += critters
 
-    def add_simon(self, simon):
-        self.simons.append(simon)
-        #self.all_simons.add(simon)
+    def add_critter(self, critter):
+        self.critters.append(critter)
+        self.critter_total += 1
 
-    def untrack(self, simon):
-        self.simons.remove(simon)
+    def untrack(self, critter):
+        self.critters.remove(critter)
 
     def register_food_drop(self, food=None, mu=15, cv=0.2):
         if food is None:
@@ -58,21 +59,21 @@ class World:
         self.turn += 1
         self.remove_expired()
         self.drop_food()    
-        for simon in sample(self.simons, len(self.simons)):   # random action order to make it fair
-            simon.act()
-            simon.age += 1
-            if simon.age > simon.max_age or simon.energy <= 0:
-                simon._die()
+        for critter in sample(self.critters, len(self.critters)):   # random action order to make it fair
+            critter.act()
+            critter.age += 1
+            if critter.age > critter.max_age or critter.energy <= 0:
+                critter._die()
 
     def report(self, trait=None):
-        if not self.simons:
+        if not self.critters:
             print("No survivors")
             return
         if trait is None:
-            for t in self.simons.pop().traits:
+            for t in self.critters.pop().traits:
                 self.report(t)
         else:
-            vals = [s.traits[trait] for s in self.simons]
+            vals = [s.traits[trait] for s in self.critters]
             print(f"\n{trait}: {sum(vals)/len(vals):.2f}")
             #print(' '.join([f'{v:.2f}' for v in vals]))
 
@@ -85,12 +86,12 @@ def run():
         world.step()
     world.turn = 0
 
-    world.add_simons([Simon(world) for _ in range(40)])
-    print(world.simons)
+    world.add_critters([Critter(world) for _ in range(40)])
+    print(world.critters)
 
-    while world.turn < 1000 and len(world.simons) > 0:
+    while world.turn < 1000 and len(world.critters) > 0:
         world.step()
-        print(f"{world.turn}: {len(world.simons)}")
+        print(f"{world.turn}: {len(world.critters)}")
 
     world.report()
 
