@@ -99,7 +99,7 @@ class Critter:
     def act(self):
         self.energy -= self.metabolic_upkeep
         if self.energy >= self.reproduction_threshold:
-            self.reproduce()
+            self.reproduce_asex()
         else:
             food_options = self._visible_food()
             if food_options:
@@ -126,12 +126,12 @@ class Critter:
         self.world.avail_food.remove(food)
 
 
-    def reproduce(self):
-        energy_passed_on = min(self.energy, self.energy_inheritance * self.max_energy)
-        self.energy -= energy_passed_on
+    def reproduce_asex(self):
+        energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
+        self.energy -= energy_donation
         new_traits = self._clone()
         Subspecies = type(self)     # so that child is of the same subclass
-        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_passed_on)
+        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
         self.children.add(child)
         self.world.add_critter(child)
 
