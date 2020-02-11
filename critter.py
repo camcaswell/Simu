@@ -33,8 +33,8 @@ class Critter:
         'per_critter': (0,INF),
         'per_food': (0,INF),
         'wander_effort': (0,1),
-        'mass': (0,INF),
-        'reproduction_threshold': (0,1),
+        'mass': (util.epsilon,INF),
+        'reproduction_threshold': (util.epsilon,1),
         'energy_inheritance': (0,1),
     }
 

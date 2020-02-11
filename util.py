@@ -6,6 +6,9 @@ from random import uniform
 def cbrt(n):
     return n ** (1. / 3)
 
+#larger than machine precision, small enough
+epsilon = 0.00000000001
+
 
 #geometry
 
