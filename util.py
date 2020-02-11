@@ -42,3 +42,10 @@ def rel_phi(me, other):
 
 def rand_phi():
     return uniform(-pi, pi)
+
+def angle(phi, psi):
+    dif = abs(phi - psi)
+    if dif > pi:
+        return 2*pi - dif
+    else:
+        return dif
