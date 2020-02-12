@@ -12,13 +12,15 @@ class MySpecies(Simon):
 
     # overwriting the default initial traits of my species
     TRAITS = {
-        'per_simon': 10,                    # perception range of other simons, currently does nothing
-        'per_food': 8,                      # perception range of food drops
+        'per_simon': 30,                    # perception range of other simons, currently does nothing
+        'per_food': 25,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Simon moves at when no goal in sight
 
         'mass': 20,                         # determines a lot of derived stats
         'reproduction_threshold': 0.4,      # proportion of max energy at which Simon will reproduce
         'energy_inheritance': 0.15,         # proportion of max energy passed on to each child
+
+        'flee_range': 5,
 
         'behav_weight_food': 1,
         'behav_weight_mate': 2,
@@ -39,7 +41,7 @@ class MySpecies(Simon):
         visible_simons = self.visible_simons
         predators = [(rho,p) for rho,p in visible_simons if self._is_predator(p)]
 
-        nearby_predators = [(rho,p) for rho,p in predators if rho<self.pred_range]
+        nearby_predators = [(rho,p) for rho,p in predators if rho<self.flee_range]
         if nearby_predators:
             self.flee()
         else:
@@ -55,10 +57,16 @@ class MySpecies(Simon):
                 else:
                     self.reproduce_sex(best_mate[1])
             elif (desire := self._find_desired()) is not None:
-                rho, phi, _ = desire
-                self._move(min(rho-self.reach+util.epsilon, self.max_speed), phi)
+                (rho, phi, _), score = desire
+                if score > 0:
+                    self._move(min(rho-self.reach+util.epsilon, self.max_speed), phi)
+                else:
+                    self.flee()
             else:
-                self.flee()
+                if predators:
+                    self.flee()
+                else:
+                    self.wander()
 
     def flee(self):
         self.flee_1()
@@ -160,10 +168,11 @@ class MySpecies(Simon):
                 desire[(dist, heading, target)] -= threat/( (ang/self.nav_angleoffset_predator) + (rho/self.nav_distance_pred) )
 
         # if every mate and food item is covered by a predator and we're not feeling brave
-        if all([val<0 for val in desire.values()]):
-            return None
+        if desire:
+            best_option = max(desire, key=lambda k: desire[k])
+            return best_option, desire[best_option]
         else:
-            return max(desire, key=lambda k: desire[k])
+            return None
 
     def _food_eval(self, food):
         return self.behav_weight_food * food.amount * 1  # something about the kind of food and own digestive system
