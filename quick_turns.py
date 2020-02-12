@@ -1,10 +1,14 @@
 import util
+from simon import Simon
+from world import World, Food
+from biology import BioAssumptions
 
 from random import sample, gauss
+from math import pi
 
 class MySpecies(Simon):
     def __init__(self, world, *args, **kwargs):
-        super().__init__(world, *args, bio=MyBioAssumptions, **kwargs)
+        super().__init__(world, *args, bio=BioAssumptions, **kwargs)
 
     # overwriting the default initial traits of my species
     TRAITS = {
@@ -15,31 +19,43 @@ class MySpecies(Simon):
         'mass': 20,                         # determines a lot of derived stats
         'reproduction_threshold': 0.4,      # proportion of max energy at which Simon will reproduce
         'energy_inheritance': 0.15,         # proportion of max energy passed on to each child
+
+        'behav_weight_food': 1,
+        'behav_weight_mate': 2,
+        'behav_weight_predator': 3,
+
+        'nav_angleoffset_food': 1,
+        'nav_angleoffset_mate': 2,
+        'nav_angleoffset_predator': 3,
+
+        'nav_distance_food': 1,
+        'nav_distance_mate': 2,
+        'nav_distance_pred': 3,
     }
 
     def act(self):
         food_options = []
         mate_options = []
-        visible_simons = self._visible_simons()
-        predators = [rho,p for rho,p in visible_simons if self._is_predator(p)]
+        visible_simons = self.visible_simons
+        predators = [(rho,p) for rho,p in visible_simons if self._is_predator(p)]
 
-        nearby_predators = [rho,p for rho,p in predators if rho<self.pred_range]
+        nearby_predators = [(rho,p) for rho,p in predators if rho<self.pred_range]
         if nearby_predators:
             self.flee()
         else:
             # compare food vs mate in reach
             limit = self.reach+util.epsilon
-            nearby_food = [rho,f,v for rho,f,v in self._visible_food() if rho<=limit]
-            nearby_mates = [rho, m, self._mate_eval(m) for rho,m in visible_simons if self._valid_mate(m) and rho<=limit]
-            if nearby_food or nearby_mates:
-                best_food = max(nearby_food, key=lambda e:e[2])
-                best_mate = max(nearby_mates, key=lambda e:e[2])
+            nearby_food = [(rho, f, self._food_eval(f)) for rho,f in self.visible_food if rho<=limit]
+            nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_simons if self._valid_mate(m) and rho<=limit]
+            best_food = max(nearby_food, key=lambda e:e[2], default=(0,0,0))
+            best_mate = max(nearby_mates, key=lambda e:e[2], default=(0,0,0))
+            if best_food[2] > 0 or best_mate[2] > 0:
                 if best_food[2] > best_mate[2]:
-                    self.reproduce_sex(best_mate[1])
-                else:
                     self.eat(best_food[1])
-            elif desire := self._find_desired() is not None:
-                rho, phi, _, _ = desire
+                else:
+                    self.reproduce_sex(best_mate[1])
+            elif (desire := self._find_desired()) is not None:
+                rho, phi, _ = desire
                 self._move(min(rho-self.reach+util.epsilon, self.max_speed), phi)
             else:
                 self.flee()
@@ -88,7 +104,7 @@ class MySpecies(Simon):
         energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
         self.energy -= energy_donation
         new_traits = self._combine_chromosomes(mate)
-        Subspecies = type(Self)     # so that child is of the same subclass
+        Subspecies = type(self)     # so that child is of the same subclass
         child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
         self.children.add(child)
         mate.children.add(child)
@@ -115,20 +131,20 @@ class MySpecies(Simon):
 
     def _find_desired(self):
         if self.energy >= self.reproduction_threshold:
-            mate_options = [r, util.rel_phi(m.loc), m, self._mate_eval(m) for r,m in self.visible_simons if self._valid_mate(m)]
+            mate_options = [(r, util.rel_phi(self.loc, m.loc), m, self._mate_eval(m)) for r,m in self.visible_simons if self._valid_mate(m)]
         else:
             mate_options = []
-        food_options = [r, util.rel_phi(f.loc), f, self._food_eval(f) for r,f in self.visible_food]
-        predators = [r, util.rel_phi(p.loc), p, self._threat_eval(p) for r,p in self.visible_simons if self._is_predator(p)]
+        food_options = [(r, util.rel_phi(self.loc, f.loc), f, self._food_eval(f)) for r,f in self.visible_food]
+        predators = [(r, util.rel_phi(self.loc, p.loc), p, self._threat_eval(p)) for r,p in self.visible_simons if self._is_predator(p)]
         desire = {}
 
-        for rho, heading, target, value in mate_options + food_options:
-            desire[(rho, heading, target, value)] = 0
+        for dist, heading, target, _ in mate_options + food_options:
+            desire[(dist, heading, target)] = 0
 
             # summing food
             for rho, phi, _, value in food_options:
                 ang = util.angle(heading, phi)
-                desire[(rho, heading, target, value)] += value/( (ang/self.nav_angleoffset_food) + (rho/self.nav_distance_food) )
+                desire[(dist, heading, target)] += value/( (ang/self.nav_angleoffset_food) + (rho/self.nav_distance_food) )
 
             # adding value of best mate option
             best_mate_value = 0
@@ -136,12 +152,12 @@ class MySpecies(Simon):
                 ang = util.angle(heading, phi)
                 adj_val = value/( (ang/self.nav_angleoffset_mate) + (rho/self.nav_distance_mate) )
                 best_mate_value = max(best_mate_value, adj_val)
-            desire[(rho, heading, target, value)] += best_mate_value
+            desire[(dist, heading, target)] += best_mate_value
 
             # subtracting predator influence
             for rho, phi, _, threat in predators:
                 ang = util.angle(heading, phi)
-                desire[(rho, heading, target, value)] -= threat/( (ang/self.nav_angleoffset_pred) + (rho/self.nav_distance_pred) )
+                desire[(dist, heading, target)] -= threat/( (ang/self.nav_angleoffset_predator) + (rho/self.nav_distance_pred) )
 
         # if every mate and food item is covered by a predator and we're not feeling brave
         if all([val<0 for val in desire.values()]):
@@ -167,3 +183,23 @@ class MySpecies(Simon):
     def _is_adult(self):
         return self.age > .2 * self.max_age
 
+
+def run():
+    world = World()
+    my_simons = {MySpecies(world) for _ in range(40)}
+    world.register_food_drop(Food, mu=5, cv=.1)
+
+    # spreading food with variety of ages before adding simons
+    for _ in range(10):
+        world.step()
+    world.turn = 0
+    world.add_simons(my_simons)
+
+    while world.turn < 1000 and len(world.simons) > 0:
+        world.step()
+        print(f"{world.turn}: {len(world.simons)}")
+
+    world.report()
+
+if __name__ == '__main__':
+    run()
