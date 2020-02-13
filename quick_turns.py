@@ -7,8 +7,8 @@ from random import sample, gauss
 from math import pi
 
 class MySpecies(Simon):
-    def __init__(self, world, *args, **kwargs):
-        super().__init__(world, *args, bio=BioAssumptions, **kwargs)
+    def __init__(self, world, *args, energy=40, **kwargs):
+        super().__init__(world, *args, energy=energy, bio=BioAssumptions, **kwargs)
 
     # overwriting the default initial traits of my species
     TRAITS = {
@@ -196,7 +196,7 @@ class MySpecies(Simon):
 def run():
     world = World()
     my_simons = {MySpecies(world) for _ in range(40)}
-    world.register_food_drop(Food, mu=5, cv=.1)
+    world.register_food_drop(Food, mu=7, cv=.1)
 
     # spreading food with variety of ages before adding simons
     for _ in range(10):
