@@ -5,6 +5,8 @@
 # Profiling
 profiler.py
 profile_results.csv
+tprofile_results.csv
+mprofile_results.csv
 
 # Other
 test.py
