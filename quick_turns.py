@@ -1,23 +1,23 @@
 import util
-from simon import Simon
+from critter import Critter
 from world import World, Food
 from biology import BioAssumptions
 
 from random import sample, gauss
 from math import pi
 
-class MySpecies(Simon):
+class MySpecies(Critter):
     def __init__(self, world, *args, energy=40, **kwargs):
         super().__init__(world, *args, energy=energy, bio=BioAssumptions, **kwargs)
 
     # overwriting the default initial traits of my species
     TRAITS = {
-        'per_simon': 30,                    # perception range of other simons, currently does nothing
+        'per_critter': 30,                    # perception range of other critters, currently does nothing
         'per_food': 25,                     # perception range of food drops
-        'wander_effort': 0.9,               # proportion of max speed Simon moves at when no goal in sight
+        'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
 
         'mass': 20,                         # determines a lot of derived stats
-        'reproduction_threshold': 0.4,      # proportion of max energy at which Simon will reproduce
+        'reproduction_threshold': 0.4,      # proportion of max energy at which Critter will reproduce
         'energy_inheritance': 0.15,         # proportion of max energy passed on to each child
 
         'flee_range': 5,
@@ -38,8 +38,8 @@ class MySpecies(Simon):
     def act(self):
         food_options = []
         mate_options = []
-        visible_simons = self.visible_simons
-        predators = [(rho,p) for rho,p in visible_simons if self._is_predator(p)]
+        visible_critters = self.visible_critters
+        predators = [(rho,p) for rho,p in visible_critters if self._is_predator(p)]
 
         nearby_predators = [(rho,p) for rho,p in predators if rho<self.flee_range]
         if nearby_predators:
@@ -48,7 +48,7 @@ class MySpecies(Simon):
             # compare food vs mate in reach
             limit = self.reach+util.epsilon
             nearby_food = [(rho, f, self._food_eval(f)) for rho,f in self.visible_food if rho<=limit]
-            nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_simons if self._valid_mate(m) and rho<=limit]
+            nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_critters if self._valid_mate(m) and rho<=limit]
             best_food = max(nearby_food, key=lambda e:e[2], default=(0,0,0))
             best_mate = max(nearby_mates, key=lambda e:e[2], default=(0,0,0))
             if best_food[2] > 0 or best_mate[2] > 0:
@@ -72,7 +72,7 @@ class MySpecies(Simon):
         self.flee_1()
 
     def flee_1(self):
-        predators = [p for p in self.visible_simons if self._is_predator(p)]
+        predators = [p for p in self.visible_critters if self._is_predator(p)]
         danger_arcs = []
         biggest_arc = 0
         for rho, pred in predators:
@@ -116,7 +116,7 @@ class MySpecies(Simon):
         child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
         self.children.add(child)
         mate.children.add(child)
-        self.world.add_simon(child)
+        self.world.add_critter(child)
 
 
 
@@ -139,11 +139,11 @@ class MySpecies(Simon):
 
     def _find_desired(self):
         if self.energy >= self.reproduction_threshold:
-            mate_options = [(r, util.rel_phi(self.loc, m.loc), m, self._mate_eval(m)) for r,m in self.visible_simons if self._valid_mate(m)]
+            mate_options = [(r, util.rel_phi(self.loc, m.loc), m, self._mate_eval(m)) for r,m in self.visible_critters if self._valid_mate(m)]
         else:
             mate_options = []
         food_options = [(r, util.rel_phi(self.loc, f.loc), f, self._food_eval(f)) for r,f in self.visible_food]
-        predators = [(r, util.rel_phi(self.loc, p.loc), p, self._threat_eval(p)) for r,p in self.visible_simons if self._is_predator(p)]
+        predators = [(r, util.rel_phi(self.loc, p.loc), p, self._threat_eval(p)) for r,p in self.visible_critters if self._is_predator(p)]
         desire = {}
 
         for dist, heading, target, _ in mate_options + food_options:
@@ -195,18 +195,18 @@ class MySpecies(Simon):
 
 def run():
     world = World()
-    my_simons = {MySpecies(world) for _ in range(40)}
+    my_critters = {MySpecies(world) for _ in range(40)}
     world.register_food_drop(Food, mu=7, cv=.1)
 
-    # spreading food with variety of ages before adding simons
+    # spreading food with variety of ages before adding critters
     for _ in range(10):
         world.step()
     world.turn = 0
-    world.add_simons(my_simons)
+    world.add_critters(my_critters)
 
-    while world.turn < 1000 and len(world.simons) > 0:
+    while world.turn < 1000 and len(world.critters) > 0:
         world.step()
-        print(f"{world.turn}: {len(world.simons)}")
+        print(f"{world.turn}: {len(world.critters)}")
 
     world.report()
 

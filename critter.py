@@ -72,16 +72,41 @@ class Critter:
         self.max_energy = self.bio.derive_max_energy(self)
         self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
 
+        # caches
+        self._visible_critters_cache = (-1, [])
+        self._visible_food_cache = (-1, [])
 
+    def wipe_caches(self):
+        del self._visible_critters_cache
+        del self._visible_food_cache
 
-
-    def __getattr__(self, name):
-        # only called if *self* has no attribute *name*
-        # allows traits to be referred to like properties w/o manually defining each
-        if name in self.traits:
-            return self.traits[name]
+    @property
+    def visible_critters(self):
+        turn, cached = self._visible_critters_cache
+        if turn == self.world.turn:
+            return cached
         else:
-            raise AttributeError
+            found = []
+            for critter in self.world.critters:
+                rho = util.dist2(self.loc, critter.loc)
+                if rho <= self.per_critter:
+                    found.append( (rho, critter) )
+            self._visible_critters_cache = (self.world.turn, found)
+            return found
+
+    @property
+    def visible_food(self):
+        turn, cached = self._visible_food_cache
+        if turn == self.world.turn:
+            return cached
+        else:
+            found = []
+            for food in self.world.avail_food:
+                rho = util.dist2(self.loc, food.loc)
+                if rho <= self.per_food:
+                    found.append( (rho, food) )
+            self._visible_food_cache = (self.world.turn, found)
+            return found
 
     @property
     def energy(self):
@@ -92,6 +117,13 @@ class Critter:
         self._energy = min(e, self.max_energy)
 
 
+    def __getattr__(self, name):
+        # only called if *self* has no attribute *name*
+        # allows traits to be referred to like properties w/o manually defining each
+        if name in self.traits:
+            return self.traits[name]
+        else:
+            raise AttributeError(name)
 
 
     #ACTIONS
@@ -101,7 +133,7 @@ class Critter:
         if self.energy >= self.reproduction_threshold:
             self.reproduce_asex()
         else:
-            food_options = self._visible_food()
+            food_options = self.visible_food
             if food_options:
                 rho,nearest = food_options[0]
                 phi = util.rel_phi(self.loc, nearest.loc)
@@ -160,23 +192,4 @@ class Critter:
     def _die(self):
         self.world.untrack(self)
 
-    def _visible_critters(self):
-        # returns other critters within this critter's perception range and it's distance
-        found = []
-        for critter in self.world.critters:
-            rho = util.dist2(self.loc, critter.loc)
-            if rho <= self.per_critter:
-                found.append((rho, critter))
-        found.sort(key = lambda e: e[0])
-        return found
-
-    def _visible_food(self):
-        # returns food within this critter's perception range and it's distance
-        found = []
-        for food in self.world.avail_food:
-            rho = util.dist2(self.loc, food.loc)
-            if rho <= self.per_food:
-                found.append((rho, food))
-        found.sort(key = lambda e: e[0])
-        return found
 

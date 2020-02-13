@@ -34,11 +34,11 @@ class World:
 
     def add_critter(self, critter):
         self.critters.append(critter)
-        self.critter_total += 1
+        #self.all_critters.add(critter)
 
-    def untrack(self, simon):
-        self.simons.remove(simon)
-        simon.wipe_caches()
+    def untrack(self, critter):
+        self.critters.remove(critter)
+        critter.wipe_caches()
 
     def register_food_drop(self, food=None, mu=15, cv=0.2):
         if food is None:
