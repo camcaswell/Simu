@@ -19,12 +19,13 @@ class BioAssumptions:
         # https://www.wolframalpha.com/input/?i=plot+%28-2%2F27%29x%5E3+-+%281%2F3%29x%5E2+%2B+%2817%2F9%29x+%2B+%28220%2F27%29
         # 1kg = 35 mass, 50km/hr = 10 speed
         x = log(critter.mass/35)/log(10)
-        return (-2/27)*x**3 - (1/3)*x**2 + (17/9)*x + (220/27)
+        speed = (-1/1350)*x**3 - (1/300)*x**2 + (17/900)*x + (11/135)
+        return speed * critter.world.TURN_DURATION
 
     @classmethod
     def derive_metabolic_upkeep(cls, critter):
         # https://en.wikipedia.org/wiki/Kleiber%27s_law
-        return .07 * (critter.mass ** (3./4))
+        return .0007 * (critter.mass ** (3./4)) * critter.world.TURN_DURATION
 
     @classmethod
     def move_cost(cls, critter, dist):

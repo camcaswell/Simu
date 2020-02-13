@@ -41,7 +41,7 @@ class Critter:
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
     # number of turns before the Critter dies
-    MAX_AGE = 50
+    MAX_AGE = 500
 
 
     #NITTY-GRITTY
