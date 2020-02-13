@@ -34,6 +34,10 @@ class World:
         self.critters.append(critter)
         #self.all_critters.add(critter)
 
+    def add_critters(self, critters):
+        for critter in critters:
+            self.add_critter(critter)
+
     def untrack(self, critter):
         self.critters.remove(critter)
         critter.wipe_caches()
