@@ -30,9 +30,6 @@ class World:
         self.turn = 0
         self.critter_total = 0
 
-    def add_critters(self, critters):
-        self.critters += critters
-
     def add_critter(self, critter):
         self.critters.append(critter)
         #self.all_critters.add(critter)
