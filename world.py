@@ -4,7 +4,7 @@ from random import random, randint, sample, gauss
 from math import inf as INF
 
 class Food:
-    def __init__(self, world, loc=None, kind='default', amount=10, good_for=10):
+    def __init__(self, world, loc=None, kind=None, amount=10, good_for=100):
         self.world = world
         if not loc:
             loc = (random()*world.size, random()*world.size)
@@ -16,7 +16,8 @@ class Food:
 
 class World:
 
-    SIZE = 100                      # side length of square in which food can drop
+    SIZE = 100                  # side length of square in which food can drop
+    TURN_DURATION = 10          # unitless; affects the "resolution" of the sim; lower numbers mean fewer things happening per turn
 
     def __init__(self, size=SIZE, food_drops=[], critters=[]):
         if critters is None:
@@ -29,15 +30,17 @@ class World:
         self.turn = 0
         self.critter_total = 0
 
-    def add_critters(self, critters):
-        self.critters += critters
-
     def add_critter(self, critter):
         self.critters.append(critter)
-        self.critter_total += 1
+        #self.all_critters.add(critter)
+
+    def add_critters(self, critters):
+        for critter in critters:
+            self.add_critter(critter)
 
     def untrack(self, critter):
         self.critters.remove(critter)
+        critter.wipe_caches()
 
     def register_food_drop(self, food=None, mu=15, cv=0.2):
         if food is None:
@@ -46,8 +49,8 @@ class World:
 
     def drop_food(self):
         for food, mu, cv in self.food_drops:
-            adjusted_mean = self.abundance * mu
-            drop_count = int(gauss(adjusted_mean, adjusted_mean*cv))
+            adjusted_mean = self.abundance * mu * self.TURN_DURATION / 100      # div100 just to avoid making the other numbers awkwardly small
+            drop_count = round(gauss(adjusted_mean, adjusted_mean*cv))
             new_drops = [food(self) for _ in range(drop_count)]
             self.avail_food += new_drops
 

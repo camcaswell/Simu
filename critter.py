@@ -33,15 +33,15 @@ class Critter:
         'per_critter': (0,INF),
         'per_food': (0,INF),
         'wander_effort': (0,1),
-        'mass': (0,INF),
-        'reproduction_threshold': (0,1),
+        'mass': (util.epsilon,INF),
+        'reproduction_threshold': (util.epsilon,1),
         'energy_inheritance': (0,1),
     }
 
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
     # number of turns before the Critter dies
-    MAX_AGE = 50
+    MAX_AGE = 500
 
 
     #NITTY-GRITTY
@@ -72,16 +72,41 @@ class Critter:
         self.max_energy = self.bio.derive_max_energy(self)
         self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
 
+        # caches
+        self._visible_critters_cache = (-1, [])
+        self._visible_food_cache = (-1, [])
 
+    def wipe_caches(self):
+        del self._visible_critters_cache
+        del self._visible_food_cache
 
-
-    def __getattr__(self, name):
-        # only called if *self* has no attribute *name*
-        # allows traits to be referred to like properties w/o manually defining each
-        if name in self.traits:
-            return self.traits[name]
+    @property
+    def visible_critters(self):
+        turn, cached = self._visible_critters_cache
+        if turn == self.world.turn:
+            return cached
         else:
-            raise AttributeError
+            found = []
+            for critter in self.world.critters:
+                rho = util.dist2(self.loc, critter.loc)
+                if rho <= self.per_critter:
+                    found.append( (rho, critter) )
+            self._visible_critters_cache = (self.world.turn, found)
+            return found
+
+    @property
+    def visible_food(self):
+        turn, cached = self._visible_food_cache
+        if turn == self.world.turn:
+            return cached
+        else:
+            found = []
+            for food in self.world.avail_food:
+                rho = util.dist2(self.loc, food.loc)
+                if rho <= self.per_food:
+                    found.append( (rho, food) )
+            self._visible_food_cache = (self.world.turn, found)
+            return found
 
     @property
     def energy(self):
@@ -92,6 +117,13 @@ class Critter:
         self._energy = min(e, self.max_energy)
 
 
+    def __getattr__(self, name):
+        # only called if *self* has no attribute *name*
+        # allows traits to be referred to like properties w/o manually defining each
+        if name in self.traits:
+            return self.traits[name]
+        else:
+            raise AttributeError(name)
 
 
     #ACTIONS
@@ -99,9 +131,9 @@ class Critter:
     def act(self):
         self.energy -= self.metabolic_upkeep
         if self.energy >= self.reproduction_threshold:
-            self.reproduce()
+            self.reproduce_asex()
         else:
-            food_options = self._visible_food()
+            food_options = self.visible_food
             if food_options:
                 rho,nearest = food_options[0]
                 phi = util.rel_phi(self.loc, nearest.loc)
@@ -126,12 +158,12 @@ class Critter:
         self.world.avail_food.remove(food)
 
 
-    def reproduce(self):
-        energy_passed_on = min(self.energy, self.energy_inheritance * self.max_energy)
-        self.energy -= energy_passed_on
+    def reproduce_asex(self):
+        energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
+        self.energy -= energy_donation
         new_traits = self._clone()
         Subspecies = type(self)     # so that child is of the same subclass
-        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_passed_on)
+        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
         self.children.add(child)
         self.world.add_critter(child)
 
@@ -160,23 +192,4 @@ class Critter:
     def _die(self):
         self.world.untrack(self)
 
-    def _visible_critters(self):
-        # returns other critters within this critter's perception range and it's distance
-        found = []
-        for critter in self.world.critters:
-            rho = util.dist2(self.loc, critter.loc)
-            if rho <= self.per_critter:
-                found.append((rho, critter))
-        found.sort(key = lambda e: e[0])
-        return found
-
-    def _visible_food(self):
-        # returns food within this critter's perception range and it's distance
-        found = []
-        for food in self.world.avail_food:
-            rho = util.dist2(self.loc, food.loc)
-            if rho <= self.per_food:
-                found.append((rho, food))
-        found.sort(key = lambda e: e[0])
-        return found
 

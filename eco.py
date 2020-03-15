@@ -87,7 +87,7 @@ def run():
     world.turn = 0
     world.add_critters(my_critters)
 
-    while world.turn < 5000 and len(world.critters) > 0:
+    while world.turn < 1000 and len(world.critters) > 0:
         world.step()
         print(f"{world.turn}: {len(world.critters)}")
 

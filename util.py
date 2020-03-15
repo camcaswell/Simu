@@ -6,6 +6,9 @@ from random import uniform
 def cbrt(n):
     return n ** (1. / 3)
 
+#larger than machine precision, small enough
+epsilon = 0.00000000001
+
 
 #geometry
 
@@ -39,3 +42,41 @@ def rel_phi(me, other):
 
 def rand_phi():
     return uniform(-pi, pi)
+
+def angle(phi, psi):
+    dif = abs(phi - psi)
+    if dif > pi:
+        return 2*pi - dif
+    else:
+        return dif
+
+def subtract_intervals(intervals):
+    # returns the intervals on the circle not covered by the input
+    if not intervals:
+        return [(0, 2*pi)]
+    if any([left-right>=2*pi for right,left in intervals]):
+        return []
+    endpoints = [(0,0)]
+    open_ints = 0
+    for right,left in intervals:
+        # normalize points to [0, 2pi)
+        left -= 2*pi * (left//(2*pi))
+        right -= 2*pi * (right//(2*pi))
+        endpoints.append((left, -1))
+        endpoints.append((right, 1))
+        if right > left:
+            open_ints += 1
+    endpoints.sort(reverse=True)
+    leftovers = []
+    last_right = None
+    while len(endpoints) > 0:
+        e_p, open_inc = endpoints.pop()
+        open_ints += open_inc
+        if open_ints == 0:
+            last_right = e_p
+        elif last_right is not None:
+            leftovers.append((last_right, e_p))
+            last_right = None
+    if open_ints == 0:
+        leftovers[0] = (last_right, leftovers[0][1])
+    return leftovers
