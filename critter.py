@@ -192,4 +192,22 @@ class Critter:
     def _die(self):
         self.world.untrack(self)
 
+    def _visible_critters(self):
+        # returns other critters within this critter's perception range and it's distance
+        found = []
+        for critter in self.world.search_critters(self.loc, self.per_critter):
+            rho = util.dist2(self.loc, critter.loc)
+            if rho <= self.per_critter:
+                found.append((rho, critter))
+        found.sort(key = lambda e: e[0])
+        return found
 
+    def _visible_food(self):
+        # returns food within this critter's perception range and it's distance
+        found = []
+        for food in self.world.search_food(self.loc, self.per_food):
+            rho = util.dist2(self.loc, food.loc)
+            if rho <= self.per_food:
+                found.append((rho, food))
+        found.sort(key = lambda e: e[0])
+        return found
