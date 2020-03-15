@@ -37,6 +37,16 @@ class Critter:
         'reproduction_threshold': (util.epsilon,1),
         'energy_inheritance': (0,1),
     }
+    
+    @classmethod
+    def _get_default_traits():
+        if hasattr(super(), "TRAITS"):
+            return {**super()._get_default_traits(), **TRAITS}
+        else:
+            return TRAITS
+    
+    # Assemble default traits by pulling from each superclass up to Critter, with later definitions overriding
+    TRAITS = __class__._get_default_traits()
 
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
