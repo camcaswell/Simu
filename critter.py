@@ -4,11 +4,23 @@ from biology import BioAssumptions
 from random import random, gauss
 from math import inf as INF
 
-class Critter:
+class CustomCritterMeta(type):
+
+    def __init__(cls, clsname, bases, attrdict):
+        super().__init__(clsname, bases, attrdict)
+        for SuperSpecies in bases:
+            if hasattr(SuperSpecies, 'TRAITS'):
+                cls.START_TRAITS = {**SuperSpecies.START_TRAITS, **cls.START_TRAITS}
+            if hasattr(SuperSpecies, 'MUTABILITY'):
+                cls.MUTABILITY = {**SuperSpecies.MUTABILITY, **cls.MUTABILITY}
+            if hasattr(SuperSpecies, 'LIMITS'):
+                cls.LIMITS = {**SuperSpecies.LIMITS, **cls.LIMITS}
+
+class Critter(metaclass=CustomCritterMeta):
 
     # default starting values
-    TRAITS = {
-        'per_critter': 10,                    # need constraint (complexity?)
+    START_TRAITS = {
+        'per_critter': 10,                  # need constraint (complexity?)
         'per_food': 10,
         'wander_effort': 0.9,               # percent of max speed Critter moves at when no goal in sight
 
@@ -37,16 +49,6 @@ class Critter:
         'reproduction_threshold': (util.epsilon,1),
         'energy_inheritance': (0,1),
     }
-    
-    @classmethod
-    def _get_default_traits():
-        if hasattr(super(), "TRAITS"):
-            return {**super()._get_default_traits(), **TRAITS}
-        else:
-            return TRAITS
-    
-    # Assemble default traits by pulling from each superclass up to Critter, with later definitions overriding
-    TRAITS = __class__._get_default_traits()
 
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
@@ -65,7 +67,7 @@ class Critter:
         if max_age is None:
             max_age = self.MAX_AGE
         if traits is None:
-            traits = self.TRAITS
+            traits = self.START_TRAITS
 
         self.loc = loc
         self._energy = energy

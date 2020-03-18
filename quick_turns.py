@@ -11,7 +11,7 @@ class MySpecies(Critter):
         super().__init__(world, *args, energy=energy, bio=BioAssumptions, **kwargs)
 
     # overwriting the default initial traits of my species
-    TRAITS = {
+    START_TRAITS = {
         'per_critter': 30,                    # perception range of other critters, currently does nothing
         'per_food': 25,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
