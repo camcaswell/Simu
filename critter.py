@@ -132,10 +132,14 @@ class Critter(metaclass=CustomCritterMeta):
     def __getattr__(self, name):
         # only called if *self* has no attribute *name*
         # allows traits to be referred to like properties w/o manually defining each
+        if name == 'traits':
+            raise AttributeError('traits')
+            
         if name in self.traits:
             return self.traits[name]
         else:
             raise AttributeError(name)
+
 
 
     #ACTIONS

@@ -21,8 +21,6 @@ class World:
     CHUNK_SIZE = 10
 
     def __init__(self, size=SIZE, food_drops=[]):
-        if critters is None:
-            critters = set()
         self.size = size
         self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
@@ -54,7 +52,7 @@ class World:
             self.add_critter(critter)
 
     def untrack(self, critter):
-        self.critters[self.chunk_dx(critter.loc)].remove(critter)
+        self.critters[self.chunk_idx(critter.loc)].remove(critter)
         critter.wipe_caches()
 
     def register_food_drop(self, food=None, mu=15, cv=0.2):
