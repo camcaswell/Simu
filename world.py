@@ -1,4 +1,5 @@
 from critter import Critter
+import datavis
 
 from random import random, randint, sample, gauss
 from math import inf as INF, ceil
@@ -26,6 +27,7 @@ class World:
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
         self.turn = 0
         self.critter_total = 0          # count of all critters over the existence of the world
+        self.species = set()
         
         self.critters = {}      # critters that exist in the world, by chunk
         self.avail_food = {}    # food that actually exists in the world, by chunk
@@ -50,6 +52,7 @@ class World:
     def add_critter(self, critter):
         self.critters[self.chunk_idx(critter.loc)].append(critter)
         self.critter_total += 1
+        self.species.add(critter.__class__)
 
     def add_critters(self, critters):
         for critter in critters:
@@ -93,17 +96,17 @@ class World:
             if critter.age > critter.max_age or critter.energy <= 0:
                 critter._die()
 
-    def report(self, trait=None):
-        if not self.critters:
-            print("No survivors")
-            return
-        if trait is None:
-            for t in self.all_critters.pop().traits:
-                self.report(t)
-        else:
-            vals = [s.traits[trait] for s in self.all_critters]
-            print(f"\n{trait}: {sum(vals)/len(vals):.2f}")
-            #print(' '.join([f'{v:.2f}' for v in vals]))
+    def report(self):
+        for Species in self.species:
+            print(f"\n{Species.__name__}")
+            extant_group = [c for c in self.all_critters if isinstance(c, Species)]
+            if extant_group:
+                for trait in Species.START_TRAITS:
+                    vals = [c.traits[trait] for c in extant_group]
+                    print(f"\t{trait}: {sum(vals)/len(vals):.2f}")
+                    #print(' '.join([f'{v:.2f}' for v in vals]))
+            else:
+                print("No surviving critters")
 
     def chunk_normalize(self, coord):
         coord = max(0, min(self.SIZE, coord))
@@ -140,11 +143,15 @@ def run():
 
     world.add_critters([Critter(world) for _ in range(40)])
 
-    while world.turn < 1000 and world.pop_count > 0:
+    pop_data = []
+
+    while world.turn < 1000 and 0 < (turn_pop := world.pop_count):
+        print(f"{world.turn}: {turn_pop}")
+        pop_data.append(turn_pop)
         world.step()
-        print(f"{world.turn}: {world.pop_count}")
 
     world.report()
+    datavis.plot_pop(pop_data)
 
 if __name__=='__main__':
     run()

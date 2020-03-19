@@ -2,6 +2,7 @@ import util
 from critter import Critter
 from world import World, Food
 from biology import BioAssumptions
+import datavis
 
 from random import sample, gauss
 from math import pi
@@ -204,11 +205,15 @@ def run():
     world.turn = 0
     world.add_critters(my_critters)
 
-    while world.turn < 1000 and len(world.critters) > 0:
+    pop_data = []
+
+    while world.turn < 10000 and 0 < (turn_pop := world.pop_count):
+        print(f"{world.turn}: {turn_pop}")
+        pop_data.append(turn_pop)
         world.step()
-        print(f"{world.turn}: {len(world.critters)}")
 
     world.report()
+    datavis.plot_pop(pop_data)
 
 if __name__ == '__main__':
     run()
