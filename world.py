@@ -25,7 +25,7 @@ class World:
         self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
         self.turn = 0
-        self.critter_total = 0
+        self.critter_total = 0          # count of all critters over the existence of the world
         
         self.critters = {}      # critters that exist in the world, by chunk
         self.avail_food = {}    # food that actually exists in the world, by chunk
@@ -36,8 +36,12 @@ class World:
                 self.avail_food[(x,y)] = []
 
     @property
+    def all_critters(self):
+        return [critter for chunk in self.critters.values() for critter in chunk]
+                
+    @property
     def pop_count(self):
-        return sum([len(chunk_list) for chunk_list in self.critters.values()])
+        return sum([len(chunk) for chunk in self.critters.values()])
 
     def add_critters(self, critters):
         for critter in critters:
@@ -83,8 +87,7 @@ class World:
         self.turn += 1
         self.remove_expired()
         self.drop_food()
-        all_critters = [critter for chunk_list in self.critters for critter in chunk_list]
-        for critter in sample(all_critters, len(all_critters)):   # random action order to make it fair
+        for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
             critter.act()
             critter.age += 1
             if critter.age > critter.max_age or critter.energy <= 0:
@@ -95,13 +98,13 @@ class World:
             print("No survivors")
             return
         if trait is None:
-            for t in self.critters.pop().traits:
+            for t in self.all_critters.pop().traits:
                 self.report(t)
         else:
-            vals = [s.traits[trait] for s in self.critters]
+            vals = [s.traits[trait] for s in self.all_critters]
             print(f"\n{trait}: {sum(vals)/len(vals):.2f}")
             #print(' '.join([f'{v:.2f}' for v in vals]))
-            
+
     def chunk_normalize(self, coord):
         coord = max(0, min(self.SIZE, coord))
         return int(coord/self.CHUNK_SIZE)
