@@ -30,11 +30,11 @@ class World:
         self.critters = {}      # critters that exist in the world, by chunk
         self.avail_food = {}    # food that actually exists in the world, by chunk
         
-        for x in range(int(self.SIZE/self.CHUNK_SIZE)):
-            for y in range(int(self.SIZE/self.CHUNK_SIZE)):
+        for x in range(int(self.SIZE/self.CHUNK_SIZE) + 1):
+            for y in range(int(self.SIZE/self.CHUNK_SIZE) + 1):
                 self.critters[(x,y)] = []
                 self.avail_food[(x,y)] = []
-                
+
     @property
     def pop_count(self):
         return sum([len(chunk_list) for chunk_list in self.critters.values()])
@@ -51,9 +51,16 @@ class World:
         for critter in critters:
             self.add_critter(critter)
 
-    def untrack(self, critter):
+    def relocate(self, critter, new_loc):
+        self.critters[self.chunk_idx(critter.loc)].remove(critter)
+        self.critters[self.chunk_idx(new_loc)].append(critter)
+
+    def untrack_critter(self, critter):
         self.critters[self.chunk_idx(critter.loc)].remove(critter)
         critter.wipe_caches()
+
+    def untrack_food(self, food):
+        self.avail_food[self.chunk_idx(food.loc)].remove(food)
 
     def register_food_drop(self, food=None, mu=15, cv=0.2):
         if food is None:
@@ -95,24 +102,28 @@ class World:
             print(f"\n{trait}: {sum(vals)/len(vals):.2f}")
             #print(' '.join([f'{v:.2f}' for v in vals]))
             
+    def chunk_normalize(self, coord):
+        coord = max(0, min(self.SIZE, coord))
+        return int(coord/self.CHUNK_SIZE)
+            
     def chunk_idx(self, loc):
         x,y = loc
-        return int(x/self.CHUNK_SIZE), int(y/self.CHUNK_SIZE)
+        return self.chunk_normalize(x), self.chunk_normalize(y)
     
     def search_critters(self, loc, search_range):
         x,y = loc
-        up_idx =    int((y+search_range)/self.SIZE)
-        down_idx =  int((y-search_range)/self.SIZE)
-        right_idx = int((x+search_range)/self.SIZE)
-        left_idx =  int((x-search_range)/self.SIZE)
+        up_idx =    self.chunk_normalize(y+search_range)
+        down_idx =  self.chunk_normalize(y-search_range)
+        right_idx = self.chunk_normalize(x+search_range)
+        left_idx =  self.chunk_normalize(x-search_range)
         return [c for i in range(left_idx, right_idx+1) for j in range(down_idx, up_idx+1) for c in self.critters[(i,j)]]
     
     def search_food(self, loc, search_range):
         x,y = loc
-        up_idx = int((y+search_range)/self.SIZE)
-        down_idx = int((y-search_range)/self.SIZE)
-        right_idx = int((x+search_range)/self.SIZE)
-        down_idx = int((x-search_range)/self.SIZE)
+        up_idx =    self.chunk_normalize(y+search_range)
+        down_idx =  self.chunk_normalize(y-search_range)
+        right_idx = self.chunk_normalize(x+search_range)
+        left_idx =  self.chunk_normalize(x-search_range)
         return [f for i in range(left_idx, right_idx+1) for j in range(down_idx, up_idx+1) for f in self.avail_food[(i,j)]]
 
 def run():

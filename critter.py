@@ -99,7 +99,7 @@ class Critter(metaclass=CustomCritterMeta):
             return cached
         else:
             found = []
-            for critter in self.world.critters:
+            for critter in self.world.search_critters(self.loc, self.per_critter):
                 rho = util.dist2(self.loc, critter.loc)
                 if rho <= self.per_critter:
                     found.append( (rho, critter) )
@@ -113,7 +113,7 @@ class Critter(metaclass=CustomCritterMeta):
             return cached
         else:
             found = []
-            for food in self.world.avail_food:
+            for food in self.world.search_food(self.loc, self.per_food):
                 rho = util.dist2(self.loc, food.loc)
                 if rho <= self.per_food:
                     found.append( (rho, food) )
@@ -171,7 +171,7 @@ class Critter(metaclass=CustomCritterMeta):
     def eat(self, food):
         assert util.dist2(self.loc, food.loc) <= self.reach
         self.energy += food.amount
-        self.world.avail_food.remove(food)
+        self.world.untrack_food(food)
 
 
     def reproduce_asex(self):
@@ -188,10 +188,13 @@ class Critter(metaclass=CustomCritterMeta):
 
     def _move(self, rho, phi):
         assert rho <= self.max_speed
+        self.energy -= self.bio.move_cost(self, rho)
         dx,dy = util.p2c((rho, phi))
         x,y = self.loc
-        self.loc = (x+dx, y+dy)
-        self.energy -= self.bio.move_cost(self, rho)
+        new_loc = (x+dx, y+dy)
+        self.world.relocate(self, new_loc)
+        self.loc = new_loc
+        
 
     def _clone(self):
         new_traits = {}
@@ -206,24 +209,4 @@ class Critter(metaclass=CustomCritterMeta):
         return new_traits
 
     def _die(self):
-        self.world.untrack(self)
-
-    def _visible_critters(self):
-        # returns other critters within this critter's perception range and it's distance
-        found = []
-        for critter in self.world.search_critters(self.loc, self.per_critter):
-            rho = util.dist2(self.loc, critter.loc)
-            if rho <= self.per_critter:
-                found.append((rho, critter))
-        found.sort(key = lambda e: e[0])
-        return found
-
-    def _visible_food(self):
-        # returns food within this critter's perception range and it's distance
-        found = []
-        for food in self.world.search_food(self.loc, self.per_food):
-            rho = util.dist2(self.loc, food.loc)
-            if rho <= self.per_food:
-                found.append((rho, food))
-        found.sort(key = lambda e: e[0])
-        return found
+        self.world.untrack_critter(self)
