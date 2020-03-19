@@ -45,6 +45,14 @@ class World:
     def pop_count(self):
         return sum([len(chunk) for chunk in self.critters.values()])
 
+    @property
+    def all_food(self):
+        return [food for chunk in self.avail_food.values() for food in chunk]
+
+    @property
+    def food_count(self):
+        return sum([len(chunk) for chunk in self.avail_food.values()])
+
     def add_critters(self, critters):
         for critter in critters:
             self.add_critter(critter)
