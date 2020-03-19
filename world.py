@@ -132,16 +132,21 @@ class World:
         left_idx =  self.chunk_normalize(x-search_range)
         return [f for i in range(left_idx, right_idx+1) for j in range(down_idx, up_idx+1) for f in self.avail_food[(i,j)]]
 
+    def set_up(self):
+        self.register_food_drop()
+        temp = self.abundance
+        self.abundance /= 2
+        for _ in range(10):     # spreading food with variety of ages before adding critters
+            self.step()
+        self.abundance = temp
+        self.turn = 0
+        print(self.food_count)
+
 def run():
     world = World()
-    world.register_food_drop()
+    world.set_up()
 
-    # spreading food with variety of ages before adding critters
-    for _ in range(10):
-        world.step()
-    world.turn = 0
-
-    world.add_critters([Critter(world) for _ in range(40)])
+    world.add_critters([Critter(world) for _ in range(10)])
 
     pop_data = []
 
