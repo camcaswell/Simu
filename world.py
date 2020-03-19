@@ -66,6 +66,7 @@ class World:
         for critter in critters:
             self.add_critter(critter)
 
+    # CHUNKS
     def relocate(self, critter, new_loc):
         self.critters[self.chunk_idx(critter.loc)].remove(critter)
         self.critters[self.chunk_idx(new_loc)].append(critter)
@@ -76,45 +77,6 @@ class World:
 
     def untrack_food(self, food):
         self.avail_food[self.chunk_idx(food.loc)].remove(food)
-
-    def register_food_drop(self, food=None, mu=7, cv=0.2):
-        if food is None:
-            food = Food
-        self.food_drops.append((food, mu, cv))
-
-    def drop_food(self):
-        for food, mu, cv in self.food_drops:
-            adjusted_mean = self.abundance * mu * self.TURN_DURATION / 100      # div100 just to avoid making the other numbers awkwardly small
-            drop_count = round(gauss(adjusted_mean, adjusted_mean*cv))
-            for _ in range(drop_count):
-                new_food = food(self)
-                self.avail_food[self.chunk_idx(new_food.loc)].append(new_food)
-
-    def remove_expired(self):
-        for chunk_list in self.avail_food.values():
-            chunk_list = [f for f in chunk_list if f.expiration > self.turn]
-
-    def step(self):
-        self.turn += 1
-        self.remove_expired()
-        self.drop_food()
-        for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
-            critter.act()
-            critter.age += 1
-            if critter.age > critter.max_age or critter.energy <= 0:
-                critter._die()
-
-    def report(self):
-        for Species in self.species:
-            print(f"\n{Species.__name__}")
-            extant_group = [c for c in self.all_critters if isinstance(c, Species)]
-            if extant_group:
-                for trait in Species.START_TRAITS:
-                    vals = [c.traits[trait] for c in extant_group]
-                    print(f"\t{trait}: {sum(vals)/len(vals):.2f}")
-                    #print(' '.join([f'{v:.2f}' for v in vals]))
-            else:
-                print("No surviving critters")
 
     def chunk_normalize(self, coord):
         coord = max(0, min(self.SIZE, coord))
@@ -139,6 +101,47 @@ class World:
         right_idx = self.chunk_normalize(x+search_range)
         left_idx =  self.chunk_normalize(x-search_range)
         return [f for i in range(left_idx, right_idx+1) for j in range(down_idx, up_idx+1) for f in self.avail_food[(i,j)]]
+
+    # FOOD
+    def register_food_drop(self, food=None, mu=7, cv=0.2):
+        if food is None:
+            food = Food
+        self.food_drops.append((food, mu, cv))
+
+    def drop_food(self):
+        for food, mu, cv in self.food_drops:
+            adjusted_mean = self.abundance * mu * self.TURN_DURATION / 100      # div100 just to avoid making the other numbers awkwardly small
+            drop_count = round(gauss(adjusted_mean, adjusted_mean*cv))
+            for _ in range(drop_count):
+                new_food = food(self)
+                self.avail_food[self.chunk_idx(new_food.loc)].append(new_food)
+
+    def remove_expired(self):
+        for chunk_list in self.avail_food.values():
+            chunk_list = [f for f in chunk_list if f.expiration > self.turn]
+
+    # ADMIN
+    def step(self):
+        self.turn += 1
+        self.remove_expired()
+        self.drop_food()
+        for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
+            critter.act()
+            critter.age += 1
+            if critter.age > critter.max_age or critter.energy <= 0:
+                critter._die()
+
+    def report(self):
+        for Species in self.species:
+            print(f"\n{Species.__name__}")
+            extant_group = [c for c in self.all_critters if isinstance(c, Species)]
+            if extant_group:
+                for trait in Species.START_TRAITS:
+                    vals = [c.traits[trait] for c in extant_group]
+                    print(f"\t{trait}: {sum(vals)/len(vals):.2f}")
+                    #print(' '.join([f'{v:.2f}' for v in vals]))
+            else:
+                print("No surviving critters")
 
     def set_up(self):
         self.register_food_drop()
