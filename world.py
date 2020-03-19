@@ -69,7 +69,7 @@ class World:
     def untrack_food(self, food):
         self.avail_food[self.chunk_idx(food.loc)].remove(food)
 
-    def register_food_drop(self, food=None, mu=15, cv=0.2):
+    def register_food_drop(self, food=None, mu=7, cv=0.2):
         if food is None:
             food = Food
         self.food_drops.append((food, mu, cv))
@@ -136,7 +136,7 @@ def run():
     world = World()
     world.register_food_drop()
 
-    # spreading food
+    # spreading food with variety of ages before adding critters
     for _ in range(10):
         world.step()
     world.turn = 0
