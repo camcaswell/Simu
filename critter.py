@@ -72,7 +72,7 @@ class Critter(metaclass=CustomCritterMeta):
 
     #NITTY-GRITTY
 
-    def __init__(self, world, energy=40, loc=None, age=0, max_age=None, traits=None, bio=BioAssumptions):
+    def __init__(self, world, energy=None, loc=None, age=0, max_age=None, traits=None, bio=BioAssumptions):
 
         self.world = world
 
@@ -84,7 +84,6 @@ class Critter(metaclass=CustomCritterMeta):
             traits = self.START_TRAITS
 
         self.loc = loc
-        self._energy = energy
         self.age = age
         self.max_age = max_age
         self.traits = traits
@@ -97,6 +96,11 @@ class Critter(metaclass=CustomCritterMeta):
         self.max_speed = self.bio.derive_max_speed(self)
         self.max_energy = self.bio.derive_max_energy(self)
         self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
+
+        if energy is None:
+            energy = .1 * self.max_energy
+        self._energy = energy
+
 
         # caches
         self._visible_critters_cache = (-1, [])
