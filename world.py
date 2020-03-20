@@ -24,7 +24,7 @@ class World:
     def __init__(self, size=SIZE, food_drops=[]):
         self.size = size
         self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
-        self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
+        self.food_drops = food_drops    # list of triplets: (constructor, mean drops/area/time, coefficient of variation)
         self.turn = 0
         self.species = set()
 
@@ -111,7 +111,7 @@ class World:
 
     def drop_food(self):
         for food, mu, cv in self.food_drops:
-            adjusted_mean = self.abundance * mu * self.TURN_DURATION / 100      # div100 just to avoid making the other numbers awkwardly small
+            adjusted_mean = self.abundance * mu * self.TURN_DURATION * self.SIZE**2 / 1000000  # div1000000 to avoid making the other numbers awkwardly small
             drop_count = round(gauss(adjusted_mean, adjusted_mean*cv))
             for _ in range(drop_count):
                 new_food = food(self)
