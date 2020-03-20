@@ -26,8 +26,9 @@ class World:
         self.abundance = 1              # multiplier for mean food per area (useful for modifying food scarcity over time)
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/turn/100 area, coefficient of variation)
         self.turn = 0
-        self.critter_total = 0          # count of all critters over the existence of the world
         self.species = set()
+
+        self.data = datavis.Data()
         
         self.critters = {}      # critters that exist in the world, by chunk
         self.avail_food = {}    # food that actually exists in the world, by chunk
@@ -59,8 +60,8 @@ class World:
 
     def add_critter(self, critter):
         self.critters[self.chunk_idx(critter.loc)].append(critter)
-        self.critter_total += 1
         self.species.add(critter.__class__)
+        self.data.born[self.turn] += 1
 
     def add_critters(self, critters):
         for critter in critters:
@@ -117,19 +118,26 @@ class World:
                 self.avail_food[self.chunk_idx(new_food.loc)].append(new_food)
 
     def remove_expired(self):
-        for chunk_list in self.avail_food.values():
-            chunk_list = [f for f in chunk_list if f.expiration > self.turn]
+        for chunk in self.avail_food.values():
+            for food_item in chunk:
+                if food_item.expiration <= self.turn:
+                    chunk.remove(food_item)
+                    self.data.food_expired[self.turn] += food_item.amount
 
     # ADMIN
     def step(self):
-        self.turn += 1
         self.remove_expired()
         self.drop_food()
         for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
             critter.act()
             critter.age += 1
-            if critter.age > critter.max_age or critter.energy <= 0:
+            if critter.age > critter.max_age:
                 critter._die()
+                self.data.old_age[self.turn] += 1
+            elif critter.energy <= 0:
+                critter._die()
+                self.data.starved[self.turn] += 1
+        self.turn += 1
 
     def report(self):
         for Species in self.species:
@@ -156,18 +164,22 @@ class World:
 def run():
     world = World()
     world.set_up()
+    world.data.turns = 200
 
-    world.add_critters([Critter(world) for _ in range(10)])
+    world.add_critters([Critter(world, age=randint(0,100)) for _ in range(50)])
 
-    pop_data = []
-
-    while world.turn < 1000 and 0 < (turn_pop := world.pop_count):
+    while world.turn < world.data.turns and 0 < (turn_pop := world.pop_count):
         print(f"{world.turn}: {turn_pop}")
-        pop_data.append(turn_pop)
+
+        world.data.pop[world.turn] = turn_pop
+        world.data.avg_age[world.turn] = sum([c.age for c in world.all_critters]) / turn_pop
+        world.data.avg_energy[world.turn] = sum([c.energy for c in world.all_critters]) / turn_pop
+        world.data.food_energy[world.turn] = sum([f.amount for f in world.all_food])
+
         world.step()
 
     world.report()
-    datavis.plot_pop(pop_data)
+    world.data.show()
 
 if __name__=='__main__':
     run()
