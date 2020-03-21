@@ -20,9 +20,9 @@ class Food:
 
 class World:
 
-    SIZE = 100                  # side length of square in which food can drop
-    TURN_DURATION = 10          # unitless; affects the "resolution" of the sim; lower numbers mean fewer things happening per turn
-    CHUNK_SIZE = 10
+    SIZE = 500                  # side length of square in which food can drop
+    TURN_DURATION = 10          # affects the "resolution" of the sim; lower numbers mean fewer things happening per turn
+    CHUNK_SIZE = 30             # quick n dirty testing suggests this is ~optimal
 
     def __init__(self, size=SIZE, food_drops=[]):
         self.size = size

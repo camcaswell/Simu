@@ -25,12 +25,12 @@ class Critter(metaclass=CustomCritterMeta):
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
 
         'mass': 20,                         # determines a lot of derived stats
-        'reproduction_threshold': 0.4,      # proportion of max energy at which Critter will reproduce
-        'energy_inheritance': 0.15,         # proportion of max energy passed on to each child
+        'reproduction_threshold': 0.9,      # proportion of max energy at which Critter will reproduce
+        'energy_inheritance': 0.4,         # proportion of max energy passed on to each child
 
         'flee_range': 5,
 
-        'behav_weight_food': 1,
+        'behav_weight_food': 2,
         'behav_weight_mate': 2,
         'behav_weight_predator': 3,
 
