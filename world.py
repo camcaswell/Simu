@@ -5,14 +5,17 @@ from random import random, randint, sample, gauss
 from math import inf as INF, ceil
 
 class Food:
-    def __init__(self, world, loc=None, kind=None, amount=10, good_for=100):
+
+    good_for = 100
+    amount = 10
+    kind = None
+
+    def __init__(self, world, loc=None):
         self.world = world
-        if not loc:
+        if loc is None:
             loc = (random()*world.size, random()*world.size)
         self.loc = loc
-        self.kind = kind
-        self.amount = amount
-        self.expiration = world.turn + good_for
+        self.expiration = world.turn + self.good_for
 
 
 class World:
@@ -151,20 +154,21 @@ class World:
             else:
                 print("No surviving critters")
 
-    def set_up(self):
+    def set_up_food(self):
         self.register_food_drop()
         temp = self.abundance
-        self.abundance /= 2
-        for _ in range(10):     # spreading food with variety of ages before adding critters
-            self.step()
+        self.abundance *= Food.good_for/2
+        self.drop_food()
         self.abundance = temp
-        self.turn = 0
-        print(self.food_count)
+        for food in self.all_food:
+            food.expiration = randint(1, food.good_for)
 
 def run():
     world = World()
-    world.set_up()
-    world.data.turns = 200
+    world.abundance = .6
+    world.set_up_food()
+    world.data.turns = 2000
+
 
     world.add_critters([Critter(world, age=randint(0,100)) for _ in range(50)])
 
