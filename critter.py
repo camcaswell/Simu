@@ -281,8 +281,9 @@ class Critter(metaclass=CustomCritterMeta):
 
     def eat(self, food):
         assert util.dist2(self.loc, food.loc) <= self.reach
-        self.energy += food.amount
-        self.world.untrack_food(food)
+        bite = min(food.amount, self.max_energy-self.energy)
+        self.energy += bite
+        food.deplte(bite)
 
 
     def reproduce_asex(self):

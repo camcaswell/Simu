@@ -16,6 +16,12 @@ class Food:
             loc = (random()*world.size, random()*world.size)
         self.loc = loc
         self.expiration = world.turn + self.good_for
+        self.amount_left = self.amount
+
+    def deplete(self, bite):
+        self.amount_left -= bite
+        if self.amount_left <= 0:
+            self.world.untrack_food(self)
 
 
 class World:
