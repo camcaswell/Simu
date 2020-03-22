@@ -72,7 +72,7 @@ class Critter(metaclass=CustomCritterMeta):
 
     #NITTY-GRITTY
 
-    def __init__(self, world, energy=None, loc=None, age=0, max_age=None, traits=None, bio=BioAssumptions):
+    def __init__(self, world, energy=None, loc=None, age=0, max_age=None, traits=None, bio=BioAssumptions, generation=0):
 
         self.world = world
 
@@ -83,13 +83,16 @@ class Critter(metaclass=CustomCritterMeta):
         if traits is None:
             traits = self.START_TRAITS
 
-        self.loc = loc
-        self.age = age
+        self.bio = bio
         self.max_age = max_age
         self.traits = traits
-        self.children = set()
         self.birth = world.turn
-        self.bio = bio
+        self.generation = generation
+
+        self.loc = loc
+        self.age = age
+        self.offspring_traits = []     # holds traits of children during gestation
+        self.gestation_timer = None    # countdown to giving birth
 
         # derived traits
         self.reach = self.bio.derive_reach(self)
@@ -118,6 +121,8 @@ class Critter(metaclass=CustomCritterMeta):
         else:
             found = []
             for critter in self.world.search_critters(self.loc, self.per_critter):
+                if critter is self:
+                    continue
                 rho = util.dist2(self.loc, critter.loc)
                 if rho <= self.per_critter:
                     found.append( (rho, critter) )
@@ -162,7 +167,18 @@ class Critter(metaclass=CustomCritterMeta):
 
     #ACTIONS
 
+    def take_turn(self):
+        self.age += 1
+        if self.gestation_timer is not None:
+            self.gestation_timer -= 1
+        self.act()
+
     def act(self):
+
+        if self.gestation_timer is not None and self.gestation_timer <= 0:
+            self.give_birth()
+            return
+
         food_options = []
         mate_options = []
         visible_critters = self.visible_critters
@@ -175,9 +191,14 @@ class Critter(metaclass=CustomCritterMeta):
             # compare food vs mate in reach
             limit = self.reach+util.epsilon
             nearby_food = [(rho, f, self._food_eval(f)) for rho,f in self.visible_food if rho<=limit]
-            nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_critters if self._valid_mate(m) and rho<=limit]
             best_food = max(nearby_food, key=lambda e:e[2], default=(0,0,0))
-            best_mate = max(nearby_mates, key=lambda e:e[2], default=(0,0,0))
+
+            if self.gestation_timer is not None:    # If this critter is currently pregnant, do not search for mates
+                best_mate = (0, 0, 0)
+            else:
+                nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_critters if self._valid_mate(m) and rho<=limit]
+                best_mate = max(nearby_mates, key=lambda e:e[2], default=(0,0,0))
+
             if best_food[2] > 0 or best_mate[2] > 0:
                 if best_food[2] > best_mate[2]:
                     self.eat(best_food[1])
@@ -196,7 +217,7 @@ class Critter(metaclass=CustomCritterMeta):
                     self.wander()
 
     def find_desired(self):
-        if self.energy >= self.reproduction_threshold:
+        if self.energy >= self.reproduction_threshold and self.gestation_timer is None:
             mate_options = [(r, util.rel_phi(self.loc, m.loc), m, self._mate_eval(m)) for r,m in self.visible_critters if self._valid_mate(m)]
         else:
             mate_options = []
@@ -266,23 +287,25 @@ class Critter(metaclass=CustomCritterMeta):
 
 
     def reproduce_asex(self):
-        energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
-        self.energy -= energy_donation
-        new_traits = self._clone()
-        Subspecies = type(self)     # so that child is of the same subclass
-        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
-        self.children.add(child)
-        self.world.add_critter(child)
+        self.energy -= self.bio.repro_cost(self)
+        self.offspring_traits.append(self._clone())
+        self.gestation_timer = self.bio.gestation_period(self)
+
 
     def reproduce_sex(self, mate):
-        energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
-        self.energy -= energy_donation
-        new_traits = self._combine_chromosomes(mate)
-        Subspecies = type(self)     # so that child is of the same subclass
-        child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation)
-        self.children.add(child)
-        mate.children.add(child)
-        self.world.add_critter(child)
+        self.energy -= self.bio.repro_cost(self)
+        self.offspring_traits.append(self._combine_chromosomes(mate))
+        self.gestation_timer = self.bio.gestation_period(self)
+
+    def give_birth(self):
+        Subspecies = type(self)     # so that children are of the same subclass
+        for new_traits in self.offspring_traits:
+            energy_donation = min(self.energy, self.energy_inheritance * self.max_energy)
+            self.energy -= energy_donation
+            child = Subspecies(self.world, loc=self.loc, traits=new_traits, energy=energy_donation, generation=self.generation+1)
+            self.world.add_critter(child)
+        self.offspring_traits = []
+        self.gestation_timer = None
 
 
     #HELPERS
@@ -342,7 +365,10 @@ class Critter(metaclass=CustomCritterMeta):
         return False       # base on species of other
 
     def _valid_mate(self, mate):
-        return (type(mate) is type(self)) and mate._is_adult()    # and other sex
+        return self._same_species(mate) and mate._is_adult() and (mate.gestation_timer is None)
 
     def _is_adult(self):
-        return self.age > .2 * self.max_age
+        return self.age > self.bio.adult_age(self)
+
+    def _same_species(self, other):
+        return type(self) is type(other)

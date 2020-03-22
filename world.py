@@ -132,8 +132,7 @@ class World:
         self.remove_expired()
         self.drop_food()
         for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
-            critter.act()
-            critter.age += 1
+            critter.take_turn()
             if critter.age > critter.max_age:
                 critter._die()
                 self.data.old_age[self.turn] += 1
