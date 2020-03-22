@@ -11,6 +11,8 @@ class Data():
         self.pop =     dd(int)
         self.avg_age = dd(float)
         self.born =    dd(int)
+        self.avg_generation = dd(float)
+        self.max_generation = dd(int)
 
         self.starved = dd(int)
         self.old_age = dd(int)
@@ -47,6 +49,7 @@ class Data():
             "Dead of Old Age (cum.)": self.accumulate(self.list_data(self.old_age)),
             "Dead of Starvation (cum.)": self.accumulate(self.list_data(self.starved)),
             "Critters Born": self.list_data(self.born),
+            "Max Generation": self.list_data(self.max_generation),
         }
         self.multi_plot(**plots)
 
@@ -54,7 +57,8 @@ class Data():
         # https://matplotlib.org/3.2.0/gallery/ticks_and_spines/multiple_yaxis_with_spines.html
 
         fig, host = plt.subplots()
-        fig.subplots_adjust(right=0.75)
+        #fig.subplots_adjust(right=.8)
+        fig.set_tight_layout(True)
 
         (main_label, main_data), *parasites = kwargs.items()
 
@@ -81,7 +85,7 @@ class Data():
 
             # Offset the right spine of parasite.  The ticks and label have already been
             # placed on the right by twinx above.
-            parasite.spines["right"].set_position(("axes", 1+0.15*count))
+            parasite.spines["right"].set_position(("axes", 1+(0.05*count)))
             # Having been created by twinx, parasite has its frame off, so the line of its
             # detached spine is invisible.  First, activate the frame but make the patch
             # and spines invisible.
@@ -103,7 +107,7 @@ class Data():
 
             lines.append(line)
 
-        host.legend(lines, [l.get_label() for l in lines])
+        #host.legend(lines, [l.get_label() for l in lines])
 
     def accumulate(self, count_list):
         ret_list = [count_list[0]]

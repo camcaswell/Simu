@@ -176,11 +176,16 @@ def run():
 
     while world.turn < world.data.turns and 0 < (turn_pop := world.pop_count):
         print(f"{world.turn}: {turn_pop}")
+        all_critters = world.all_critters
+        all_food = world.all_food
 
         world.data.pop[world.turn] = turn_pop
-        world.data.avg_age[world.turn] = sum([c.age for c in world.all_critters]) / turn_pop
-        world.data.avg_energy[world.turn] = sum([c.energy for c in world.all_critters]) / turn_pop
-        world.data.food_energy[world.turn] = sum([f.amount for f in world.all_food])
+        world.data.avg_age[world.turn] = sum([c.age for c in all_critters]) / turn_pop
+        #world.data.avg_generation[world.turn] = sum([c.generation for c in all_critters]) / turn_pop
+        world.data.max_generation[world.turn] = max([c.generation for c in all_critters])
+
+        world.data.avg_energy[world.turn] = sum([c.energy for c in all_critters]) / turn_pop
+        world.data.food_energy[world.turn] = sum([f.amount for f in all_food])
 
         world.step()
 
