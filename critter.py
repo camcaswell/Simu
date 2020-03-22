@@ -283,7 +283,7 @@ class Critter(metaclass=CustomCritterMeta):
         assert util.dist2(self.loc, food.loc) <= self.reach
         bite = min(food.amount, self.max_energy-self.energy)
         self.energy += bite
-        food.deplte(bite)
+        food.deplete(bite)
 
 
     def reproduce_asex(self):
