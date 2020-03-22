@@ -352,7 +352,7 @@ class Critter(metaclass=CustomCritterMeta):
         self.world.untrack_critter(self)
 
     def _food_eval(self, food):
-        return self.behav_weight_food * food.amount * 1  # something about the kind of food and own digestive system
+        return self.behav_weight_food * food.amount * (self.max_energy/self.energy) * 1  # something about the kind of food and own digestive system
 
     def _mate_eval(self, mate):
         return self.behav_weight_mate * 1   # something about sexual fitness of mate
