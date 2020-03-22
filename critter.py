@@ -20,17 +20,17 @@ class Critter(metaclass=CustomCritterMeta):
 
     # default starting values
     START_TRAITS = {
-        'per_critter': 30,                  # perception range of other critters
-        'per_food': 25,                     # perception range of food drops
+        'per_critter': 60,                  # perception range of other critters
+        'per_food': 60,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
 
         'mass': 20,                         # determines a lot of derived stats
-        'reproduction_threshold': 0.9,      # proportion of max energy at which Critter will reproduce
-        'energy_inheritance': 0.4,         # proportion of max energy passed on to each child
+        'reproduction_threshold': 0.8,      # proportion of max energy at which Critter will reproduce
+        'energy_inheritance': 0.5,         # proportion of max energy passed on to each child
 
         'flee_range': 5,
 
-        'behav_weight_food': 2,
+        'behav_weight_food': 1,
         'behav_weight_mate': 2,
         'behav_weight_predator': 3,
 
@@ -67,7 +67,7 @@ class Critter(metaclass=CustomCritterMeta):
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .008
     # number of turns before the Critter dies
-    MAX_AGE = 500
+    MAX_AGE = 800
 
 
     #NITTY-GRITTY
@@ -101,9 +101,8 @@ class Critter(metaclass=CustomCritterMeta):
         self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
 
         if energy is None:
-            energy = .1 * self.max_energy
+            energy = .5 * self.max_energy
         self._energy = energy
-
 
         # caches
         self._visible_critters_cache = (-1, [])

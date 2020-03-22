@@ -11,7 +11,7 @@ class BioAssumptions:
 
     @classmethod
     def derive_max_energy(cls, critter):
-        return 3 * critter.mass
+        return 10 * critter.mass
 
     @classmethod
     def derive_max_speed(cls, critter):
@@ -35,7 +35,8 @@ class BioAssumptions:
     @classmethod
     def repro_cost(cls, critter):
         # currently a flat proportion of max energy
-        return 0.1 * critter.max_energy
+        return 0.05 * cls.derive_max_energy(critter)
+
     @classmethod
     def adult_age(cls, critter):
         return critter.MAX_AGE // 4

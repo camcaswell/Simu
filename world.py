@@ -6,8 +6,8 @@ from math import inf as INF, ceil
 
 class Food:
 
-    good_for = 100
-    amount = 10
+    good_for = 200
+    amount = 20
     kind = None
 
     def __init__(self, world, loc=None):
@@ -164,12 +164,15 @@ class World:
 
 def run():
     world = World()
-    world.abundance = .6
-    world.set_up_food()
+
+    world.abundance = .3
     world.data.turns = 2000
+    start_pop = 70
+
+    world.set_up_food()
 
 
-    world.add_critters([Critter(world, age=randint(0,100)) for _ in range(50)])
+    world.add_critters([Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(start_pop)])
 
     while world.turn < world.data.turns and 0 < (turn_pop := world.pop_count):
         print(f"{world.turn}: {turn_pop}")
