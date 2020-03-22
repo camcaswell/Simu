@@ -46,12 +46,12 @@ class Critter(metaclass=CustomCritterMeta):
 
     # coefficients of variation (SD/MEAN)
     MUTABILITY = {
-        'per_critter': .008,
-        'per_food': .008,
-        'wander_effort': .008,
-        'mass': .008,
-        'reproduction_threshold': .008,
-        'energy_inheritance': .008,
+        'per_critter': .015,
+        'per_food': .015,
+        'wander_effort': .015,
+        'mass': .015,
+        'reproduction_threshold': .015,
+        'energy_inheritance': .015,
     }
 
     # upper and lower bounds past which values for the trait wouldn't make sense
@@ -65,7 +65,7 @@ class Critter(metaclass=CustomCritterMeta):
     }
 
     # used for any traits w/o defined CV in MUTABILITY
-    DEFAULT_CV = .008
+    DEFAULT_CV = .015
     # number of turns before the Critter dies
     MAX_AGE = 800
 
