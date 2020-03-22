@@ -36,3 +36,10 @@ class BioAssumptions:
     def repro_cost(cls, critter):
         # currently a flat proportion of max energy
         return 0.1 * critter.max_energy
+    @classmethod
+    def adult_age(cls, critter):
+        return critter.MAX_AGE // 4
+
+    @classmethod
+    def gestation_period(cls, critter):
+        return critter.MAX_AGE // 30
