@@ -181,6 +181,11 @@ class World:
         for food in self.all_food:
             food.expiration = randint(1, food.good_for)
 
+    def get_generator(self, turn_limit = INF):
+        while self.turn < turn_limit:
+            yield self
+            self.step()
+
 def run():
     world = World()
 
