@@ -4,9 +4,9 @@ from collections import defaultdict as dd
 COLORS = ['r', 'g', 'b', 'c', 'm', 'y']
 
 class Data():
-    def __init__(self):
+    def __init__(self, turns):
 
-        self.turns = 0
+        self.turns = turns
 
         self.pop =     dd(int)
         self.avg_age = dd(float)
@@ -22,10 +22,9 @@ class Data():
         self.food_energy = dd(float)
         self.food_expired = dd(float)
 
-    def show(self):
+    def compile_plots(self):
         self.plot_thermo()
         self.plot_demo()
-        plt.show()
 
     def plot_pop(self):
         plt.plot(self.list_data(self.pop))
