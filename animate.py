@@ -9,11 +9,14 @@ from random import randint
 
 
 def main():
-    world = World()
 
-    turns = 500
-    world.abundance = 0.6
+    turns = 5000
     start_pop = 50
+
+    world = World(size=400)
+
+    world.abundance = 0.3
+
 
     world.set_up_food()
     world.add_critters([Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(start_pop)])
@@ -25,8 +28,8 @@ def main():
 def animate_world(world, turns):
     data = Data(turns)
     fig, ax = plt.subplots()
-    ax.set_xlim(-0.1*world.SIZE, 1.1*world.SIZE)
-    ax.set_ylim(-0.1*world.SIZE, 1.1*world.SIZE)
+    ax.set_xlim(-0.1*world.size, 1.1*world.size)
+    ax.set_ylim(-0.1*world.size, 1.1*world.size)
 
     critter_line, = ax.plot([], [], color='red', marker='D', linestyle='')
     food_line, = ax.plot([], [], color='green', marker='x', linestyle='')
@@ -70,7 +73,7 @@ def animate_world(world, turns):
         food_line.set_xdata(food_xs)
         food_line.set_ydata(food_ys)
 
-        ax.set_title(f"Turn: {turn}  Pop:{turn_pop}")
+        ax.set_title(f"Turn: {turn}  Pop: {turn_pop}")
 
 
     ani = animation.FuncAnimation(fig, draw, world.get_generator(turns), 
