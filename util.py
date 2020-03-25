@@ -50,6 +50,11 @@ def angle(phi, psi):
     else:
         return dif
 
+def wrap_angle(phi):
+    # convert angle to [0, 2pi)
+    return phi - 2*pi * (phi//(2*pi))
+
+
 def subtract_intervals(intervals):
     # returns the intervals on the circle not covered by the input
     if not intervals:
@@ -59,9 +64,8 @@ def subtract_intervals(intervals):
     endpoints = [(0,0)]
     open_ints = 0
     for right,left in intervals:
-        # normalize points to [0, 2pi)
-        left -= 2*pi * (left//(2*pi))
-        right -= 2*pi * (right//(2*pi))
+        left = wrap_angle(left)
+        right = wrap_angle(right)
         endpoints.append((left, -1))
         endpoints.append((right, 1))
         if right > left:
