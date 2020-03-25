@@ -2,6 +2,7 @@ import util
 from biology import BioAssumptions
 
 from random import random, gauss, sample
+from numpy.random import vonmises
 from math import inf as INF, pi
 
 class CustomCritterMeta(type):
@@ -23,6 +24,7 @@ class Critter(metaclass=CustomCritterMeta):
         'per_critter': 60,                  # perception range of other critters
         'per_food': 60,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
+        'wander_faith': 40,                 # how close they adhere to their previous heading when wandering
 
         'mass': 20,                         # determines a lot of derived stats
         'reproduction_threshold': 0.8,      # proportion of max energy at which Critter will reproduce
@@ -59,6 +61,7 @@ class Critter(metaclass=CustomCritterMeta):
         'per_critter': (0,INF),
         'per_food': (0,INF),
         'wander_effort': (0,1),
+        'wander_faith': (0, INF),
         'mass': (util.epsilon,INF),
         'reproduction_threshold': (util.epsilon,1),
         'energy_inheritance': (0,1),
@@ -83,16 +86,19 @@ class Critter(metaclass=CustomCritterMeta):
         if traits is None:
             traits = self.START_TRAITS
 
+        # facts
         self.bio = bio
         self.max_age = max_age
         self.traits = traits
         self.birth = world.turn
         self.generation = generation
 
+        # state info
         self.loc = loc
         self.age = age
         self.offspring_traits = []     # holds traits of children during gestation
         self.gestation_timer = None    # countdown to giving birth
+        self.last_heading = 0
 
         # derived traits
         self.reach = self.bio.derive_reach(self)
@@ -274,7 +280,7 @@ class Critter(metaclass=CustomCritterMeta):
         return right + util.angle(right, left)/2
 
     def wander(self):
-        phi = util.rand_phi()
+        phi = vonmises(self.last_heading, self.wander_faith)
         rho = self.wander_effort * self.max_speed
         self._move(rho, phi)
 
@@ -318,6 +324,7 @@ class Critter(metaclass=CustomCritterMeta):
         new_loc = (x+dx, y+dy)
         self.world.relocate(self, new_loc)
         self.loc = new_loc
+        self.last_heading = phi
         
 
     def _clone(self):
