@@ -22,11 +22,11 @@ class Critter(metaclass=CustomCritterMeta):
     # default starting values
     START_TRAITS = {
         'per_critter': 60,                  # perception range of other critters
-        'per_food': 60,                     # perception range of food drops
+        'per_food': 30,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
         'wander_faith': 40,                 # how close they adhere to their previous heading when wandering
 
-        'mass': 20,                         # determines a lot of derived stats
+        'mass': 15,                         # determines a lot of derived stats
         'reproduction_threshold': 0.8,      # proportion of max energy at which Critter will reproduce
         'energy_inheritance': 0.5,         # proportion of max energy passed on to each child
 
@@ -70,7 +70,7 @@ class Critter(metaclass=CustomCritterMeta):
     # used for any traits w/o defined CV in MUTABILITY
     DEFAULT_CV = .015
     # number of turns before the Critter dies
-    MAX_AGE = 800
+    MAX_AGE = 300
 
 
     #NITTY-GRITTY

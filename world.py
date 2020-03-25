@@ -6,8 +6,8 @@ from math import inf as INF, ceil
 
 class Food:
 
-    good_for = 200
-    amount = 20
+    good_for = 900
+    amount = 50
     kind = None
 
     def __init__(self, world, loc=None):
@@ -26,7 +26,7 @@ class Food:
 
 class World:
 
-    SIZE = 500                  # side length of square in which food can drop
+    SIZE = 200                  # side length of square in which food can drop
     TURN_DURATION = 10          # affects the "resolution" of the sim; lower numbers mean fewer things happening per turn
     CHUNK_SIZE = 30             # quick n dirty testing suggests this is ~optimal
 
@@ -118,7 +118,7 @@ class World:
         return [f for i in range(left_idx, right_idx+1) for j in range(down_idx, up_idx+1) for f in self.avail_food[(i,j)]]
 
     # FOOD
-    def register_food_drop(self, food=None, mu=7, cv=0.2):
+    def register_food_drop(self, food=None, mu=5, cv=0.2):
         if food is None:
             food = Food
         self.food_drops.append((food, mu, cv))
@@ -191,11 +191,9 @@ def run():
 
     turns = 1000
     world.abundance = .6
-    start_pop = 70
+    start_pop = 50
 
     world.set_up_food()
-
-
     world.add_critters([Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(start_pop)])
 
     while world.turn < turns and 0 < (turn_pop := world.pop_count):
