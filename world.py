@@ -1,5 +1,5 @@
 from critter import Critter
-import datavis
+from datavis import Data
 
 from random import random, randint, sample, gauss
 from math import inf as INF, ceil
@@ -195,6 +195,28 @@ def run():
 
     while world.turn < turns and 0 < (turn_pop := world.pop_count):
         print(f"{world.turn}: {turn_pop}")
+
+        turn_pop = world.pop_count
+        all_critters = world.all_critters
+        all_food = world.all_food
+        turn = world.turn
+
+        data = Data(turns)
+
+        data.pop[turn] = turn_pop
+        data.avg_age[turn] = sum([c.age for c in all_critters]) / turn_pop
+        #data.avg_generation[turn] = sum([c.generation for c in all_critters]) / turn_pop
+        data.max_generation[turn] = max([c.generation for c in all_critters])
+
+        data.starved[turn] = world.starved
+        data.old_age[turn] = world.old_age
+        data.prey[turn] = world.prey
+        data.born[turn] = world.born
+        data.food_expired[turn] = world.food_expired
+
+        data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
+        data.food_energy[turn] = sum([f.amount for f in all_food])
+
         world.step()
 
     world.report()
