@@ -9,7 +9,7 @@ class CustomCritterMeta(type):
     def __init__(cls, clsname, bases, attrdict):
         super().__init__(clsname, bases, attrdict)
         for SuperSpecies in bases:
-            if hasattr(SuperSpecies, 'TRAITS'):
+            if hasattr(SuperSpecies, 'START_TRAITS'):
                 cls.START_TRAITS = {**SuperSpecies.START_TRAITS, **cls.START_TRAITS}
             if hasattr(SuperSpecies, 'MUTABILITY'):
                 cls.MUTABILITY = {**SuperSpecies.MUTABILITY, **cls.MUTABILITY}
