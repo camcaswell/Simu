@@ -6,11 +6,11 @@ from random import uniform
 def cbrt(n):
     return n ** (1. / 3)
 
-#larger than machine precision, small enough
-epsilon = 0.00000000001
+epsilon = 0.00000000001  # larger than machine precision, small enough
 
 
-#geometry
+
+# geometry
 
 def dist2(c1, c2):
     x1,y1 = c1
