@@ -173,7 +173,8 @@ class World:
                 print("No surviving critters")
 
     def set_up_food(self):
-        self.register_food_drop()
+        if not self.food_drops:
+            self.register_food_drop()
         temp = self.abundance
         self.abundance *= Food.good_for/2
         self.drop_food()
