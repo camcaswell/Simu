@@ -32,17 +32,22 @@ class Critter(metaclass=CustomCritterMeta):
 
         'flee_range': 5,
 
-        'behav_weight_food': 1,
+        'behav_weight_wander': .75,
+        'behav_weight_flee': 0.8,
+        'behav_weight_food': 2,
         'behav_weight_mate': 2,
         'behav_weight_predator': 3,
+        'behav_weight_competitor': 30,
 
         'nav_angleoffset_food': 1,
         'nav_angleoffset_mate': 2,
         'nav_angleoffset_predator': 3,
+        'nav_angleoffset_competitor': 3,
 
         'nav_distance_food': 1,
         'nav_distance_mate': 2,
         'nav_distance_pred': 3,
+        'nav_distance_competitor': 1,
     }
 
 
@@ -184,86 +189,103 @@ class Critter(metaclass=CustomCritterMeta):
             self.give_birth()
             return
 
-        food_options = []
-        mate_options = []
-        visible_critters = self.visible_critters
-        predators = [(rho,p) for rho,p in visible_critters if self._is_predator(p)]
-
-        nearby_predators = [(rho,p) for rho,p in predators if rho<self.flee_range]
-        if nearby_predators:
+        near_predators = [p for rho,p in self.visible_critters
+                            if self._is_predator(p)
+                            and rho < self.flee_range]
+        if near_predators:
             self.flee()
-        else:
-            # compare food vs mate in reach
-            limit = self.reach+util.epsilon
-            nearby_food = [(rho, f, self._food_eval(f)) for rho,f in self.visible_food if rho<=limit]
-            best_food = max(nearby_food, key=lambda e:e[2], default=(0,0,0))
+            return
 
-            if self.gestation_timer is not None:    # If this critter is currently pregnant, do not search for mates
-                best_mate = (0, 0, 0)
+        food_desire = ((self.max_energy-self.energy)/self.max_energy) * self.behav_weight_food
+        wander_desire = self.behav_weight_wander
+        flee_desire = self.behav_weight_flee
+
+        priorities = [(self.seek_food, food_desire), (self.wander, wander_desire), (self.flee, flee_desire)]
+
+        if self._is_adult() and self.gestation_timer is None:
+            mate_desire = (self.age/self.MAX_AGE) *  self.behav_weight_mate
+            priorities.append((self.seek_mate, mate_desire))
+
+        priorities.sort(key=lambda p:p[1], reverse=True)
+
+        for action in [p for p,_ in priorities]:
+            if decision := action() is not None:
+                break
+                #send action enum to world
+
+    def seek_food(self):
+        food_in_reach = [f for rho,f in self.visible_food if rho <= self.reach + util.epsilon]
+        if food_in_reach:
+            best_option = max(food_in_reach, key=lambda f: self._food_eval(f))
+            self.eat(best_option)
+            return 1
+        else:
+            food_options = [(r, self._rel_phi(f), self._food_eval(f))
+                            for r,f in self.visible_food]
+            predators =    [(r, self._rel_phi(p), self._threat_eval(p))
+                            for r,p in self.visible_critters if self._is_predator(p)]
+            competitors =  [(util.dist2(self.loc, c.loc), self._rel_phi(c), self._food_competition_eval(c))
+                            for _,c in self.visible_critters if self._food_competitor(c)]
+            desire = {}
+            for dist, heading, _ in food_options:
+                desire[(dist, heading)] = 0
+
+                # summing value of food in this direction
+                for rho, phi, value in food_options:
+                    ang = util.angle(heading, phi)
+                    desire[(dist, heading)] += value/( (ang/self.nav_angleoffset_food) + (rho/self.nav_distance_food) )
+
+                # subtracting value of competitors in this direction
+                for comp_dist, phi, competition in competitors:
+                    ang = util.angle(heading, phi)
+                    desire[(dist, heading)] -= competition/( (ang/self.nav_angleoffset_competitor) + (comp_dist/self.nav_distance_competitor) )
+
+                # subtracting value of predators in this direction
+                for rho, phi, threat in predators:
+                    ang = util.angle(heading, phi)
+                    desire[(dist, heading)] -= threat/( (ang/self.nav_angleoffset_predator) + (rho/self.nav_distance_pred) )
+
+            if any(value > 0 for value in desire.values()):
+                dist, heading = max(desire, key=lambda k: desire[k])
+                self._move(min(dist-self.reach, self.max_speed), heading)
+                return 1
             else:
-                nearby_mates = [(rho, m, self._mate_eval(m)) for rho,m in visible_critters if self._valid_mate(m) and rho<=limit]
-                best_mate = max(nearby_mates, key=lambda e:e[2], default=(0,0,0))
+                return None
 
-            if best_food[2] > 0 or best_mate[2] > 0:
-                if best_food[2] > best_mate[2]:
-                    self.eat(best_food[1])
-                else:
-                    self.reproduce_sex(best_mate[1])
-            elif (desire := self.find_desired()) is not None:
-                (rho, phi, _), score = desire
-                if score > 0:
-                    self._move(min(rho-self.reach+util.epsilon, self.max_speed), phi)
-                else:
-                    self.flee()
+    def seek_mate(self):
+        mate_in_reach = [m for rho,m in self.visible_critters if self._valid_mate(m) and rho <= self.reach + util.epsilon]
+        if mate_in_reach:
+            best_option = max(mate_in_reach, key=lambda m: self._mate_eval(m))
+            self.reproduce_sex(best_option)
+            return 1
+        else:
+            predators =    [(r, self._rel_phi(p), self._threat_eval(p))
+                            for r,p in self.visible_critters if self._is_predator(p)]
+            desire = {}
+            for dist, mate_option in [(r,m) for r,m in self.visible_critters if self._valid_mate(m)]:
+                heading = self._rel_phi(mate_option)
+                desire[(dist, heading)] = self._mate_eval(mate_option)/(dist/self.nav_distance_mate)
+
+                # subtracting value of predators in this direction
+                for rho, phi, threat in predators:
+                    ang = util.angle(heading, phi)
+                    desire[(dist, heading)] -= threat/( (ang/self.nav_angleoffset_predator) + (rho/self.nav_distance_pred) )
+
+            if any(value > 0 for value in desire.values()):
+                dist, heading = max(desire, key=lambda k: desire[k])
+                self._move(min(dist-self.reach, self.max_speed), heading)
+                return 1
             else:
-                if predators:
-                    self.flee()
-                else:
-                    self.wander()
-
-    def find_desired(self):
-        if self.energy >= self.reproduction_threshold and self.gestation_timer is None:
-            mate_options = [(r, util.rel_phi(self.loc, m.loc), m, self._mate_eval(m)) for r,m in self.visible_critters if self._valid_mate(m)]
-        else:
-            mate_options = []
-        food_options = [(r, util.rel_phi(self.loc, f.loc), f, self._food_eval(f)) for r,f in self.visible_food]
-        predators = [(r, util.rel_phi(self.loc, p.loc), p, self._threat_eval(p)) for r,p in self.visible_critters if self._is_predator(p)]
-        desire = {}
-
-        for dist, heading, target, _ in mate_options + food_options:
-            desire[(dist, heading, target)] = 0
-
-            # summing food
-            for rho, phi, _, value in food_options:
-                ang = util.angle(heading, phi)
-                desire[(dist, heading, target)] += value/( (ang/self.nav_angleoffset_food) + (rho/self.nav_distance_food) )
-
-            # adding value of best mate option
-            best_mate_value = 0
-            for rho, phi, _, value in mate_options:
-                ang = util.angle(heading, phi)
-                adj_val = value/( (ang/self.nav_angleoffset_mate) + (rho/self.nav_distance_mate) )
-                best_mate_value = max(best_mate_value, adj_val)
-            desire[(dist, heading, target)] += best_mate_value
-
-            # subtracting predator influence
-            for rho, phi, _, threat in predators:
-                ang = util.angle(heading, phi)
-                desire[(dist, heading, target)] -= threat/( (ang/self.nav_angleoffset_predator) + (rho/self.nav_distance_pred) )
-
-        # if every mate and food item is covered by a predator and we're not feeling brave
-        if desire:
-            best_option = max(desire, key=lambda k: desire[k])
-            return best_option, desire[best_option]
-        else:
-            return None
+                return None
 
     def flee(self):
         predators = [p for p in self.visible_critters if self._is_predator(p)]
+        if not predators:
+            return None
         danger_arcs = []
         biggest_arc = 0
         for rho, pred in predators:
-            phi = util.rel_phi(self.loc, pred.loc)
+            phi = self._rel_phi(pred)
             arc = self._threat_eval(pred) / (rho ** (3.0/2))
             danger_arcs.append(phi, arc)
             biggest_arc = max(biggest_arc, arc)
@@ -277,16 +299,18 @@ class Critter(metaclass=CustomCritterMeta):
             safe_intervals = util.subtract_intervals(intervals)
             scale *= 0.8
         right, left = max(safe_intervals, key=lambda i: i[1]-i[0])
-        return right + util.angle(right, left)/2
+        heading = right + util.angle(right, left)/2
+        self._move(self.max_speed, heading)
+        return 1
 
     def wander(self):
         phi = vonmises(self.last_heading, self.wander_faith)
         rho = self.wander_effort * self.max_speed
         self._move(rho, phi)
+        return 1
 
 
     def eat(self, food):
-        assert util.dist2(self.loc, food.loc) <= self.reach
         bite = min(food.amount, self.max_energy-self.energy)
         self.energy += bite
         food.deplete(bite)
@@ -317,7 +341,7 @@ class Critter(metaclass=CustomCritterMeta):
     #HELPERS
 
     def _move(self, rho, phi):
-        assert rho <= self.max_speed
+        rho = min(rho, self.max_speed)
         self.energy -= self.bio.move_cost(self, rho)
         dx,dy = util.p2c((rho, phi))
         x,y = self.loc
@@ -368,8 +392,14 @@ class Critter(metaclass=CustomCritterMeta):
     def _threat_eval(self, predator):
         return self.behav_weight_predator * 1   # maybe something about predator species/size
 
+    def _food_competition_eval(self, other):
+        return self.behav_weight_competitor * 1
+
     def _is_predator(self, other):
         return False       # base on species of other
+
+    def _food_competitor(self, other):
+        return not self._is_predator(other)
 
     def _valid_mate(self, mate):
         return self._same_species(mate) and mate._is_adult() and (mate.gestation_timer is None)
@@ -379,3 +409,6 @@ class Critter(metaclass=CustomCritterMeta):
 
     def _same_species(self, other):
         return type(self) is type(other)
+
+    def _rel_phi(self, other):
+        return util.rel_phi(self.loc, other.loc)
