@@ -98,7 +98,7 @@ class Critter(metaclass=CustomCritterMeta):
         self.age = age
         self.offspring_traits = []     # holds traits of children during gestation
         self.gestation_timer = None    # countdown to giving birth
-        self.last_heading = 0
+        self.last_heading = util.rand_phi()
 
         # derived traits
         self.reach = self.bio.derive_reach(self)
