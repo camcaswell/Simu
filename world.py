@@ -1,28 +1,9 @@
 from critter import Critter
+from food import Food
 from datavis import Data
 
 from random import random, randint, sample, gauss
 from math import inf as INF, ceil
-
-class Food:
-
-    good_for = 900
-    amount = 50
-    kind = None
-
-    def __init__(self, world, loc=None):
-        self.world = world
-        if loc is None:
-            loc = (random()*world.size, random()*world.size)
-        self.loc = loc
-        self.expiration = world.turn + self.good_for
-        self.amount_left = self.amount
-
-    def deplete(self, bite):
-        self.amount_left -= bite
-        if self.amount_left <= 0:
-            self.world.untrack_food(self)
-
 
 class World:
 
@@ -131,13 +112,6 @@ class World:
                 new_food = food(self)
                 self.avail_food[self.chunk_idx(new_food.loc)].append(new_food)
 
-    def remove_expired(self):
-        for chunk in self.avail_food.values():
-            for food_item in chunk:
-                if food_item.expiration <= self.turn:
-                    chunk.remove(food_item)
-                    self.food_expired += food_item.amount
-
     # ADMIN
     def step(self):
 
@@ -145,10 +119,10 @@ class World:
         self.starved =      0
         self.old_age =      0
         self.prey =         0
-        self.food_expired = 0
         self.born =         0
 
-        self.remove_expired()
+        for food in self.all_food:
+            food.take_turn()
         self.drop_food()
         for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
             critter.take_turn()
@@ -216,7 +190,6 @@ def run():
         data.old_age[turn] = world.old_age
         data.prey[turn] = world.prey
         data.born[turn] = world.born
-        data.food_expired[turn] = world.food_expired
 
         data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
         data.food_energy[turn] = sum([f.amount for f in all_food])

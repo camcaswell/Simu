@@ -311,10 +311,8 @@ class Critter(metaclass=CustomCritterMeta):
 
 
     def eat(self, food):
-        bite = min(food.amount, self.max_energy-self.energy)
+        bite = food.bite(self.max_energy-self.energy)
         self.energy += bite
-        food.deplete(bite)
-
 
     def reproduce_asex(self):
         self.energy -= self.bio.repro_cost(self)
@@ -384,7 +382,7 @@ class Critter(metaclass=CustomCritterMeta):
         self.world.untrack_critter(self)
 
     def _food_eval(self, food):
-        return self.behav_weight_food * food.amount * (self.max_energy/self.energy) * 1  # something about the kind of food and own digestive system
+        return self.behav_weight_food * food.amount_left * (self.max_energy/self.energy) * 1  # something about the kind of food and own digestive system
 
     def _mate_eval(self, mate):
         return self.behav_weight_mate * 1   # something about sexual fitness of mate

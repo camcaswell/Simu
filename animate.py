@@ -49,7 +49,6 @@ def animate_world(world, turns):
         data.old_age[turn] = world.old_age
         data.prey[turn] = world.prey
         data.born[turn] = world.born
-        data.food_expired[turn] = world.food_expired
 
         data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
         data.food_energy[turn] = sum([f.amount for f in all_food])
