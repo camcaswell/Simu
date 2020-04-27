@@ -4,6 +4,31 @@ from biology import BioAssumptions
 from random import random, gauss, sample
 from numpy.random import vonmises
 from math import inf as INF, pi
+from enum import Enum, auto
+
+class Decisions(Enum):
+    IDLE            = auto()
+    DEPART          = auto()
+    STARVE          = auto()
+
+    PREDATE         = auto()
+    FIGHT           = auto()
+
+    EAT             = auto()
+
+    BREED_ASEX      = auto()
+    BREED_SEX       = auto()
+    GIVE_BIRTH      = auto()
+
+    SEEK_FOOD       = auto()
+    SEEK_MATE       = auto()
+    FLEE            = auto()
+    WANDER          = auto()
+
+class Results(Enum):
+    SUCCESS = auto()
+    FAILURE = auto()
+    KILLED  = auto()
 
 class CustomCritterMeta(type):
 
@@ -20,13 +45,13 @@ class Critter(metaclass=CustomCritterMeta):
     # default starting values
     START_TRAITS = {
         'per_critter': 60,                  # perception range of other critters
-        'per_food': 30,                     # perception range of food drops
+        'per_food': 60,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
         'wander_faith': 40,                 # how close they adhere to their previous heading when wandering
 
         'mass': 15,                         # determines a lot of derived stats
         'reproduction_threshold': 0.8,      # proportion of max energy at which Critter will reproduce
-        'energy_inheritance': 0.5,         # proportion of max energy passed on to each child
+        'energy_inheritance': 0.5,          # proportion of max energy passed on to each child
 
         'flee_range': 5,
 
@@ -61,13 +86,13 @@ class Critter(metaclass=CustomCritterMeta):
 
     # upper and lower bounds past which values for the trait wouldn't make sense
     LIMITS = {
-        'per_critter': (0,INF),
-        'per_food': (0,INF),
-        'wander_effort': (0,1),
+        'per_critter': (0, INF),
+        'per_food': (0, INF),
+        'wander_effort': (0, 1),
         'wander_faith': (0, INF),
-        'mass': (util.epsilon,INF),
-        'reproduction_threshold': (util.epsilon,1),
-        'energy_inheritance': (0,1),
+        'mass': (util.epsilon, INF),
+        'reproduction_threshold': (util.epsilon, 1),
+        'energy_inheritance': (0, 1),
     }
 
     # used for any traits w/o defined CV in MUTABILITY
@@ -89,6 +114,7 @@ class Critter(metaclass=CustomCritterMeta):
         if traits is None:
             traits = self.START_TRAITS
 
+
         # facts
         self.bio = bio
         self.max_age = max_age
@@ -96,22 +122,23 @@ class Critter(metaclass=CustomCritterMeta):
         self.birth = world.turn
         self.generation = generation
 
-        # state info
-        self.loc = loc
-        self.age = age
-        self.offspring_traits = []     # holds traits of children during gestation
-        self.gestation_timer = None    # countdown to giving birth
-        self.last_heading = util.rand_phi()
-
         # derived traits
         self.reach = self.bio.derive_reach(self)
         self.max_speed = self.bio.derive_max_speed(self)
         self.max_energy = self.bio.derive_max_energy(self)
         self.metabolic_upkeep = self.bio.derive_metabolic_upkeep(self)
 
+        # state info
         if energy is None:
             energy = .5 * self.max_energy
-        self._energy = energy
+        self.energy = energy
+        self.loc = loc
+        self.age = age
+        self.offspring_traits = []     # holds traits of children during gestation
+        self.gestation_timer = None    # countdown to giving birth
+        self.last_heading = util.rand_phi()
+        self.last_decision = Decisions.IDLE
+        self.last_result = Results.SUCCESS
 
         # caches
         self._visible_critters_cache = (-1, [])
@@ -172,27 +199,28 @@ class Critter(metaclass=CustomCritterMeta):
             raise AttributeError(name)
 
 
-
-    #ACTIONS
-
     def take_turn(self):
         self.age += 1
         if self.gestation_timer is not None:
-            self.gestation_timer -= 1
-        self.act()
+            self.gestation_timer -= 1    
+        if self.age > self.max_age:
+            return Decisions.DEPART, None
+        elif self.energy <= 0:
+            return Decisions.STARVE, None
+        return self.decide()
 
-    def act(self):
+    # DECISIONS
+
+    def decide(self):
 
         if self.gestation_timer is not None and self.gestation_timer <= 0:
-            self.give_birth()
-            return
+            return Decisions.GIVE_BIRTH, None
 
         near_predators = [p for rho,p in self.visible_critters
                             if self._is_predator(p)
                             and rho < self.flee_range]
         if near_predators:
-            self.flee()
-            return
+            return self.flee()
 
         food_desire = ((self.max_energy-self.energy)/self.max_energy) * self.behav_weight_food
         wander_desire = self.behav_weight_wander
@@ -206,17 +234,18 @@ class Critter(metaclass=CustomCritterMeta):
 
         priorities.sort(key=lambda p:p[1], reverse=True)
 
-        for action in [p for p,_ in priorities]:
-            if decision := action() is not None:
-                break
-                #send action enum to world
+        for attempt in [p for p,_ in priorities]:
+            decision, target = attempt()
+            if decision is not None:    # guaranteed by default bc Critter.wander always returns Decisions.WANDER
+                return decision, target
+            else:
+                return Decisions.IDLE, None
 
     def seek_food(self):
         food_in_reach = [f for rho,f in self.visible_food if rho <= self.reach + util.epsilon]
         if food_in_reach:
             best_option = max(food_in_reach, key=lambda f: self._food_eval(f))
-            self.eat(best_option)
-            return 1
+            return Decisions.EAT, best_option
         else:
             food_options = [(r, self._rel_phi(f), self._food_eval(f))
                             for r,f in self.visible_food]
@@ -245,17 +274,16 @@ class Critter(metaclass=CustomCritterMeta):
 
             if any(value > 0 for value in desire.values()):
                 dist, heading = max(desire, key=lambda k: desire[k])
-                self._move(min(dist-self.reach, self.max_speed), heading)
-                return 1
+                dist = dist - self.reach
+                return Decisions.SEEK_FOOD, (dist, heading)
             else:
-                return None
+                return None, None
 
     def seek_mate(self):
         mate_in_reach = [m for rho,m in self.visible_critters if self._valid_mate(m) and rho <= self.reach + util.epsilon]
         if mate_in_reach:
             best_option = max(mate_in_reach, key=lambda m: self._mate_eval(m))
-            self.reproduce_sex(best_option)
-            return 1
+            return Decisions.BREED_SEX, best_option
         else:
             predators =    [(r, self._rel_phi(p), self._threat_eval(p))
                             for r,p in self.visible_critters if self._is_predator(p)]
@@ -271,15 +299,15 @@ class Critter(metaclass=CustomCritterMeta):
 
             if any(value > 0 for value in desire.values()):
                 dist, heading = max(desire, key=lambda k: desire[k])
-                self._move(min(dist-self.reach, self.max_speed), heading)
-                return 1
+                dist = dist - self.reach
+                return Decisions.SEEK_MATE, (dist, heading)
             else:
-                return None
+                return None, None
 
     def flee(self):
         predators = [p for p in self.visible_critters if self._is_predator(p)]
         if not predators:
-            return None
+            return None, None
         danger_arcs = []
         biggest_arc = 0
         for rho, pred in predators:
@@ -298,25 +326,54 @@ class Critter(metaclass=CustomCritterMeta):
             scale *= 0.8
         right, left = max(safe_intervals, key=lambda i: i[1]-i[0])
         heading = right + util.angle(right, left)/2
-        self._move(self.max_speed, heading)
-        return 1
+        return Decisions.FLEE, (self.max_speed, heading)
 
     def wander(self):
         phi = vonmises(self.last_heading, self.wander_faith)
         rho = self.wander_effort * self.max_speed
-        self._move(rho, phi)
-        return 1
+        return Decisions.WANDER, (rho, phi)
 
+    # CARRY OUT DECISIONS
+
+    def resolve_turn(self, decision, target):
+        if decision in [Decisions.SEEK_FOOD, Decisions.SEEK_MATE, Decisions.FLEE, Decisions.WANDER]:
+            self._move(*target)
+        elif decision is Decisions.EAT:
+            self.eat(target)
+        elif decision is Decisions.BREED_ASEX:
+            self.reproduce_asex()
+        elif decision is Decisions.GIVE_BIRTH:
+            self.give_birth()
+        elif decision is Decisions.IDLE:
+            pass
+        elif decision in [Decisions.DEPART, Decisions.STARVE]:
+            self._die()
+        elif decision is Decisions.BREED_SEX:
+            if self.world.decisions[target] is (Decisions.BREED_SEX, self): # if potential mate also decided to mate and chose this critter
+                self.reproduce_sex(target)
+            else:
+                return Results.FAILURE
+        elif decision is Decisions.PREDATE:
+            self.predate(target)
+        elif decision is Decisions.FIGHT:
+            self.fight(target)
+
+        return Results.SUCCESS
 
     def eat(self, food):
         bite = food.bite(self.max_energy-self.energy)
         self.energy += bite
 
+    def predate(self, prey):
+        raise NotImplementedError("The default critter is not a predator.")
+
+    def fight(self, other):
+        raise NotImplementedError
+
     def reproduce_asex(self):
         self.energy -= self.bio.repro_cost(self)
         self.offspring_traits.append(self._clone())
         self.gestation_timer = self.bio.gestation_period(self)
-
 
     def reproduce_sex(self, mate):
         self.energy -= self.bio.repro_cost(self)
@@ -333,8 +390,7 @@ class Critter(metaclass=CustomCritterMeta):
         self.offspring_traits = []
         self.gestation_timer = None
 
-
-    #HELPERS
+    # HELPERS
 
     def _move(self, rho, phi):
         rho = min(rho, self.max_speed)

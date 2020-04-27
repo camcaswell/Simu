@@ -1,4 +1,4 @@
-from critter import Critter
+from critter import Critter, Decisions, Results
 from food import Food
 from datavis import Data
 
@@ -17,16 +17,12 @@ class World:
         self.food_drops = food_drops    # list of triplets: (constructor, mean drops/area/time, coefficient of variation)
         self.turn = 0
         self.species = set()
-
-        # Count events each turn, get wiped in *step*
-        self.starved =      0
-        self.old_age =      0
-        self.prey =         0
-        self.food_expired = 0
-        self.born =         0
         
         self.critters = {}      # critters that exist in the world, by chunk
         self.avail_food = {}    # food that actually exists in the world, by chunk
+
+        self.decisions = {}     # registers each critter's decision each turn
+        self.results = {}       # registers results during and after resolving turn
         
         for x in range(int(self.SIZE/self.CHUNK_SIZE) + 1):
             for y in range(int(self.SIZE/self.CHUNK_SIZE) + 1):
@@ -56,7 +52,6 @@ class World:
     def add_critter(self, critter):
         self.critters[self.chunk_idx(critter.loc)].append(critter)
         self.species.add(critter.__class__)
-        self.born += 1
 
     def add_critters(self, critters):
         for critter in critters:
@@ -116,24 +111,31 @@ class World:
     # ADMIN
     def step(self):
 
-        # Wipe event counters
-        self.starved =      0
-        self.old_age =      0
-        self.prey =         0
-        self.born =         0
+        self.turn += 1
 
         for food in self.all_food:
             food.take_turn()
         self.drop_food()
-        for critter in sample(self.all_critters, self.pop_count):   # random action order to make it fair
-            critter.take_turn()
-            if critter.age > critter.max_age:
-                critter._die()
-                self.old_age += 1
-            elif critter.energy <= 0:
-                critter._die()
-                self.starved += 1
-        self.turn += 1
+
+        self.decisions = {}
+        self.results = {}
+        turn_order = sample(self.all_critters, self.pop_count)  # random action order to make it fair
+        for critter in turn_order:
+            decision, target = critter.take_turn()
+            self.decisions[critter] = (decision, target)
+
+        for critter in turn_order:
+            decision, target = self.decisions[critter]
+            if decision is Decisions.PREDATE:
+                result = critter.resolve_turn(decision, target)
+                self.results[critter] = result
+                if result is Results.SUCCESS:
+                    self.results[target] = Results.KILLED
+
+        for critter in turn_order:
+            decision, target = self.decisions[critter]
+            if critter not in self.results:     # if not hunting or already killed
+                self.results[critter] = critter.resolve_turn(decision, target)
 
     def report(self):
         for Species in self.species:
@@ -172,6 +174,8 @@ def run():
     world.set_up_food()
     world.add_critters([Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(start_pop)])
 
+    data = Data(turns)
+
     while world.turn < turns and 0 < (turn_pop := world.pop_count):
         print(f"{world.turn}: {turn_pop}")
 
@@ -180,17 +184,10 @@ def run():
         all_food = world.all_food
         turn = world.turn
 
-        data = Data(turns)
-
         data.pop[turn] = turn_pop
         data.avg_age[turn] = sum([c.age for c in all_critters]) / turn_pop
         #data.avg_generation[turn] = sum([c.generation for c in all_critters]) / turn_pop
         data.max_generation[turn] = max([c.generation for c in all_critters])
-
-        data.starved[turn] = world.starved
-        data.old_age[turn] = world.old_age
-        data.prey[turn] = world.prey
-        data.born[turn] = world.born
 
         data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
         data.food_energy[turn] = sum([f.amount_left for f in all_food])
