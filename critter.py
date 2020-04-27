@@ -138,6 +138,7 @@ class Critter(metaclass=CustomCritterMeta):
         self.gestation_timer = None    # countdown to giving birth
         self.last_heading = util.rand_phi()
         self.last_decision = Decisions.IDLE
+        self.last_target = None
         self.last_result = Results.SUCCESS
 
         # caches

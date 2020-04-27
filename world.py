@@ -123,19 +123,24 @@ class World:
         for critter in turn_order:
             decision, target = critter.take_turn()
             self.decisions[critter] = (decision, target)
+            critter.last_decision = decision
+            critter.last_target = target
 
         for critter in turn_order:
             decision, target = self.decisions[critter]
             if decision is Decisions.PREDATE:
                 result = critter.resolve_turn(decision, target)
                 self.results[critter] = result
+                critter.last_result = result
                 if result is Results.SUCCESS:
                     self.results[target] = Results.KILLED
 
         for critter in turn_order:
             decision, target = self.decisions[critter]
             if critter not in self.results:     # if not hunting or already killed
-                self.results[critter] = critter.resolve_turn(decision, target)
+                result = critter.resolve_turn(decision, target)
+                self.results[critter] = result
+                critter.last_result = result
 
     def report(self):
         for Species in self.species:
