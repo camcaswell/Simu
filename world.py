@@ -106,7 +106,8 @@ class World:
 
     def drop_food(self):
         for food, mu, cv in self.food_drops:
-            adjusted_mean = self.abundance * mu * self.TURN_DURATION * self.SIZE**2 / 1000000  # div1000000 to avoid making the other numbers awkwardly small
+            size_modifier = self.SIZE**2 / 1000000  # div1000000 to avoid making the other numbers awkwardly small
+            adjusted_mean = size_modifier * self.abundance * mu * self.TURN_DURATION
             drop_count = round(gauss(adjusted_mean, adjusted_mean*cv))
             for _ in range(drop_count):
                 new_food = food(self)
@@ -150,11 +151,11 @@ class World:
         if not self.food_drops:
             self.register_food_drop()
         temp = self.abundance
-        self.abundance *= Food.good_for/2
+        self.abundance *= 50
         self.drop_food()
         self.abundance = temp
         for food in self.all_food:
-            food.expiration = randint(1, food.good_for)
+            food.amount_left = random() * food.default_amount
 
     def get_generator(self, turn_limit = INF):
         while self.turn < turn_limit:
@@ -192,7 +193,7 @@ def run():
         data.born[turn] = world.born
 
         data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
-        data.food_energy[turn] = sum([f.amount for f in all_food])
+        data.food_energy[turn] = sum([f.amount_left for f in all_food])
 
         world.step()
 

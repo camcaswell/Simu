@@ -1,17 +1,22 @@
+from random import random
+
 class Food:
 
-    def __init__(self, world, amount, loc=None):
+    default_amount = 60
+
+    def __init__(self, world, amount=default_amount, loc=None):
         self.world = world
         if loc is None:
             loc = (random()*world.size, random()*world.size)
         self.loc = loc
         self.amount_left = amount
+        self.original_amount = amount
 
     def take_turn(self):
         self.deteriorate()
 
     def deteriorate(self):
-        self.deplete(max(0.02 * self.amount_left, 0.01))
+        self.deplete(0.0005*self.original_amount + 0.01*self.amount_left)
 
     def bite(self, size):
         size = min(size, self.amount_left)
