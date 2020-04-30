@@ -1,5 +1,5 @@
 from world import World
-from critter import Critter
+from critter import Critter, Decisions, Results
 from datavis import Data
 
 import matplotlib.pyplot as plt
@@ -45,13 +45,13 @@ def animate_world(world, turns):
         #data.avg_generation[turn] = sum([c.generation for c in all_critters]) / turn_pop
         data.max_generation[turn] = max([c.generation for c in all_critters])
 
-        data.starved[turn] = world.starved
-        data.old_age[turn] = world.old_age
-        data.prey[turn] = world.prey
-        data.born[turn] = world.born
+        data.starved[turn] = len([d for d,_ in world_state.decisions.values() if d is Decisions.STARVE])
+        data.old_age[turn] = len([d for d,_ in world_state.decisions.values() if d is Decisions.DEPART])
+        data.prey[turn] = len([r for r in world_state.results.values() if r is Results.KILLED])
+        data.born[turn] = sum([n for d,n in world_state.decisions.values() if d is Decisions.GIVE_BIRTH])
 
         data.avg_energy[turn] = sum([c.energy for c in all_critters]) / turn_pop
-        data.food_energy[turn] = sum([f.amount for f in all_food])
+        data.food_energy[turn] = sum([f.amount_left for f in all_food])
 
         critter_xs = []
         critter_ys = []
