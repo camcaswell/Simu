@@ -23,8 +23,8 @@ tk.Widget.__init__ = _new_init
 
 class MainWindow(tk.Tk):
 
-    WINDOW_WIDTH = 600
-    WINDOW_HEIGHT = 800
+    WINDOW_WIDTH = 1000
+    WINDOW_HEIGHT = 840
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,45 +52,42 @@ class MainWindow(tk.Tk):
 
     def create_widgets(self):
         # Main frame
-        main = tk.Frame(self, bg='light gray', bd=15)
+        main = tk.Frame(self, bg='light gray', bd=10)
         main.place(relwidth=1, relheight=1)
 
         # World Canvas
-        W = 400
-        H = 400
-        world_panel = tk.Frame(main, bg='pink')
-        world_canvas = tk.Canvas(world_panel, bg='light yellow', height=H, width=W, highlightthickness=0)
-        maintain_aspect(world_panel, world_canvas)
-        self._world_canvas = world_canvas
+        world_panel = ScalingCanvas(main, bg='light yellow', highlightthickness=0)
+        self.world_canvas = world_panel.canvas
 
         # Entry Panel
-        right_panel = tk.Frame(main, bg='dark gray', relief='sunken')
+        right_panel = tk.Frame(main, bg='dark gray', relief='ridge', bd=2)
 
         size_entry = LabelEntry(right_panel, labeltext="World size", var=self._world_size)
         start_pop_entry = LabelEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
 
-        size_entry.grid(row=0, column=0, sticky='nw')
-        start_pop_entry.grid(row=1, column=0, sticky='nw')
+        size_entry.grid(row=0, column=0, sticky='nw', padx=2, pady=(2,1))
+        start_pop_entry.grid(row=1, column=0, sticky='nw', padx=2, pady=(1,2))
 
         # Button Panel
-        bot_panel = tk.Frame(main, bg='dark gray')
+        bot_panel = tk.Frame(main, bg='dark gray', relief='ridge', bd=2)
 
         self.load_button = tk.Button(bot_panel, text="Load world", activebackground='orange', command=lambda: self.load_world())
         self.play_button = tk.Button(bot_panel, text="▶", command=lambda: self.play_pause())
         step_button = tk.Button(bot_panel, text="▶❚", command=lambda: self.next_frame())
         test_button = tk.Button(bot_panel, text="test", command=lambda: self.test())
 
-        load_button.grid(row=0, column=0, sticky='nw')
-        run_button.grid(row=0, column=1, sticky='nw')
-        step_button.grid(row=0, column=2, sticky='nw')
+        self.load_button.grid(row=0, column=0, padx=(2,10), pady=2)
+        self.play_button.grid(row=0, column=1, pady=2)
+        step_button.grid(row=0, column=2, pady=2)
+        test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
         # MAIN LAYOUT
         main.rowconfigure(1, weight=1)
         main.columnconfigure(1, weight=1)
 
-        world_panel.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew")
-        bot_panel.grid(row=2, column=0, sticky='nw')
-        right_panel.grid(row=0, column=2, sticky='nw')
+        world_panel.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew", padx=1, pady=1)
+        bot_panel.grid(row=2, column=0, padx=1, pady=1)
+        right_panel.grid(row=0, column=2, padx=1, pady=1)
 
 
     def load_world(self):
@@ -161,38 +158,39 @@ class MainWindow(tk.Tk):
 
 
 
-def maintain_aspect(container, content):
+class ScalingCanvas(tk.Frame):
+    def __init__(self, parent, *args, **kwargs):
+        bg = parent.cget('bg')
+        super().__init__(parent, bg=bg)
+        self.border_frame = tk.Frame(self, bg=bg, relief='ridge', bd=2)    # exists to create border without screwing up canvas coordinates
+        self.border_frame.grid_propagate(False)
+        self.canvas = tk.Canvas(self.border_frame, *args, **kwargs)
+        self.border_frame.grid(row=0, column=0, sticky='nsew')
+        self.canvas.grid(row=0, column=0, sticky='nsew')
 
-    def resize(event):
-
-        if event.serial < 100 and container.old_width == 1 and container.old_height == 1:
-            new_size = min(event.width, event.height)
-            content.configure(width=new_size, height=new_size)
-            content.old_width = new_size
-            content.old_height = new_size
-            return  # dodge a Configure event that occurs when the window opens
-
-        if event.width != container.old_width or event.height != container.old_height:
-            new_size = min(event.width, event.height)
-            scale = new_size / content.old_width
-            content.scale('all', 0, 0, scale, scale)
-            content.configure(width=new_size, height=new_size)
-            content.old_width = new_size
-            content.old_height = new_size
-
-    content.grid(row=0, column=0, sticky='nsew')
-    container.bind('<Configure>', resize)
+        def resize(event):
+            if event.width != self.old_width or event.height != self.old_height:
+                new_size = min(event.width, event.height)
+                self.border_frame.configure(width=new_size, height=new_size)
+                bd = int(self.border_frame.cget('bd'))
+                self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
+                scale = (new_size-2*bd) / self.canvas.old_width
+                self.canvas.old_width = new_size-2*bd
+                self.canvas.scale('all', 0, 0, scale, scale)
+        self.bind('<Configure>', resize)
 
 class LabelEntry(tk.Frame):
     def __init__(self, parent, labeltext, var, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        label = tk.Label(self, text=labeltext)
-        entry = tk.Entry(self, textvariable=var)
+        label = tk.Label(self, text=labeltext, width=12, anchor='w')
+        entry = tk.Entry(self, width=10, textvariable=var)
         label.grid(row=0, column=0)
         entry.grid(row=0, column=1)
 
 
-
-if __name__=='__main__':
+def launch():
     root = MainWindow()
     root.mainloop()
+
+if __name__=='__main__':
+    launch()
