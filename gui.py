@@ -115,6 +115,7 @@ class MainWindow(tk.Tk):
         x -= diam/2
         y -= diam/2
         self._world_canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
+        self.world_canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
         radius = sqrt(food.amount_left)/3
