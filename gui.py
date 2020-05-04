@@ -146,14 +146,7 @@ class MainWindow(tk.Tk):
         self.world_canvas.update()
 
     def test(self):
-        cv = self.world_canvas
-        w = cv.winfo_width()
-        h = cv.winfo_height()
-        cv.create_rectangle(0,0,0,0, fill='purple')
-        cv.create_rectangle(4,4,4,4, fill='purple')
-        cv.create_rectangle(w,0,w,0, fill='purple')
-        cv.create_rectangle(0,h,0,h, fill='purple')
-        cv.create_rectangle(w,h,w,h, fill='purple')
+        pass
 
 
 
