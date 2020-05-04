@@ -122,12 +122,11 @@ class MainWindow(tk.Tk):
         self.world_canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
 
     def play_pause(self):
-        if self._world is None:
-            self.load_button.flash()
-            return
         if self._running:
             self._running = False
             self.play_button.configure(text="▶")
+        elif self._world is None:
+            self.load_button.flash()
         else:
             self._running = True
             self.play_button.configure(text="❚❚")
