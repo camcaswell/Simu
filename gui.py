@@ -39,7 +39,7 @@ class MainWindow(tk.Tk):
         self._start_pop.set(50)
 
         # OTHER
-        self._world_canvas = None
+        self.world_canvas = None
 
         # Initial size and placement
         monitor_width = self.winfo_screenwidth()
@@ -81,14 +81,13 @@ class MainWindow(tk.Tk):
         step_button.grid(row=0, column=2, pady=2)
         test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
-        # MAIN LAYOUT
+        # Main Layout
         main.rowconfigure(1, weight=1)
         main.columnconfigure(1, weight=1)
 
         world_panel.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew", padx=1, pady=1)
         bot_panel.grid(row=2, column=0, padx=1, pady=1)
         right_panel.grid(row=0, column=2, padx=1, pady=1)
-
 
     def load_world(self):
         world = self._world = World(size=self._world_size.get())
@@ -99,7 +98,7 @@ class MainWindow(tk.Tk):
 
     def draw_world(self):
         world = self._world
-        canvas = self._world_canvas
+        canvas = self.world_canvas
         canvas.delete('critter')
         canvas.delete('food')
         for food in world.all_food:
@@ -114,13 +113,13 @@ class MainWindow(tk.Tk):
         x,y = critter.loc
         x -= diam/2
         y -= diam/2
-        self._world_canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
+        self.world_canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
         self.world_canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
         radius = sqrt(food.amount_left)/3
         x,y = food.loc
-        self._world_canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
+        self.world_canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
 
     def play_pause(self):
         if self._world is None:
@@ -133,8 +132,8 @@ class MainWindow(tk.Tk):
             self._running = True
             self.play_button.configure(text="❚❚")
             while self._running:
-            self.step()
-            time.sleep(0.05)
+                self.step()
+                time.sleep(0.05)
 
     def next_frame(self):
         if self._world is None:
@@ -145,7 +144,7 @@ class MainWindow(tk.Tk):
     def step(self):
         self._world.step()
         self.draw_world()
-        self._world_canvas.update()
+        self.world_canvas.update()
 
     def test(self):
         cv = self.world_canvas
