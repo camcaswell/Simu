@@ -52,7 +52,7 @@ class MainWindow(tk.Tk):
 
     def create_widgets(self):
         # Main frame
-        main = tk.Frame(self, bg='light gray', bd=10)
+        main = tk.Frame(self, bg='tan', bd=10)
         main.place(relwidth=1, relheight=1)
 
         # World Canvas
@@ -60,7 +60,7 @@ class MainWindow(tk.Tk):
         self.world_canvas = world_panel.canvas
 
         # Entry Panel
-        right_panel = tk.Frame(main, bg='dark gray', relief='ridge', bd=2)
+        right_panel = tk.Frame(main, bg='saddle brown', relief='ridge', bd=2)
 
         size_entry = LabelEntry(right_panel, labeltext="World size", var=self._world_size)
         start_pop_entry = LabelEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
@@ -69,12 +69,12 @@ class MainWindow(tk.Tk):
         start_pop_entry.grid(row=1, column=0, sticky='nw', padx=2, pady=(1,2))
 
         # Button Panel
-        bot_panel = tk.Frame(main, bg='dark gray', relief='ridge', bd=2)
+        bot_panel = tk.Frame(main, bg='saddle brown', relief='ridge', bd=2)
 
-        self.load_button = tk.Button(bot_panel, text="Load world", activebackground='orange', command=lambda: self.load_world())
-        self.play_button = tk.Button(bot_panel, text="▶", command=lambda: self.play_pause())
-        step_button = tk.Button(bot_panel, text="▶❚", command=lambda: self.next_frame())
-        test_button = tk.Button(bot_panel, text="test", command=lambda: self.test())
+        self.load_button = tk.Button(bot_panel, text="Load world", bg='light yellow', activebackground='orange', command=lambda: self.load_world())
+        self.play_button = tk.Button(bot_panel, text="▶", bg='light yellow', activebackground='orange', command=lambda: self.play_pause())
+        step_button = tk.Button(bot_panel, text="▶❚", bg='light yellow', activebackground='orange', command=lambda: self.next_frame())
+        test_button = tk.Button(bot_panel, text="test", bg='light yellow', activebackground='orange', command=lambda: self.test())
 
         self.load_button.grid(row=0, column=0, padx=(2,10), pady=2)
         self.play_button.grid(row=0, column=1, pady=2)
@@ -182,7 +182,7 @@ class ScalingCanvas(tk.Frame):
 class LabelEntry(tk.Frame):
     def __init__(self, parent, labeltext, var, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        label = tk.Label(self, text=labeltext, width=12, anchor='w')
+        label = tk.Label(self, text=labeltext, bg='light yellow', width=12, anchor='w')
         entry = tk.Entry(self, width=10, textvariable=var)
         label.grid(row=0, column=0)
         entry.grid(row=0, column=1)
