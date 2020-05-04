@@ -30,6 +30,8 @@ class MainWindow(tk.Tk):
         super().__init__(*args, **kwargs)
 
         # CONTROL STATE
+        self._running = False
+        self._world = None
         self._world_size = tk.IntVar()
         self._world_size.set(400)
 
@@ -73,9 +75,10 @@ class MainWindow(tk.Tk):
         # Button Panel
         bot_panel = tk.Frame(main, bg='dark gray')
 
-        load_button = tk.Button(bot_panel, text="Load world", command=lambda: self.load_world())
-        run_button = tk.Button(bot_panel, text="Run", command=lambda: self.run())
-        step_button = tk.Button(bot_panel, text="Step", command=lambda: self.step())
+        self.load_button = tk.Button(bot_panel, text="Load world", activebackground='orange', command=lambda: self.load_world())
+        self.play_button = tk.Button(bot_panel, text="▶", command=lambda: self.play_pause())
+        step_button = tk.Button(bot_panel, text="▶❚", command=lambda: self.next_frame())
+        test_button = tk.Button(bot_panel, text="test", command=lambda: self.test())
 
         load_button.grid(row=0, column=0, sticky='nw')
         run_button.grid(row=0, column=1, sticky='nw')
@@ -121,16 +124,40 @@ class MainWindow(tk.Tk):
         x,y = food.loc
         self._world_canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
 
-    def run(self):
-        while True:
+    def play_pause(self):
+        if self._world is None:
+            self.load_button.flash()
+            return
+        if self._running:
+            self._running = False
+            self.play_button.configure(text="▶")
+        else:
+            self._running = True
+            self.play_button.configure(text="❚❚")
+            while self._running:
             self.step()
             time.sleep(0.05)
+
+    def next_frame(self):
+        if self._world is None:
+            self.load_button.flash()
+            return
+        self.step()
 
     def step(self):
         self._world.step()
         self.draw_world()
         self._world_canvas.update()
 
+    def test(self):
+        cv = self.world_canvas
+        w = cv.winfo_width()
+        h = cv.winfo_height()
+        cv.create_rectangle(0,0,0,0, fill='purple')
+        cv.create_rectangle(4,4,4,4, fill='purple')
+        cv.create_rectangle(w,0,w,0, fill='purple')
+        cv.create_rectangle(0,h,0,h, fill='purple')
+        cv.create_rectangle(w,h,w,h, fill='purple')
 
 
 
