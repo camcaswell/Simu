@@ -90,6 +90,7 @@ class MainWindow(tk.Tk):
         right_panel.grid(row=0, column=2, padx=1, pady=1)
 
     def load_world(self):
+        self.pause()
         world = self._world = World(size=self._world_size.get())
         world.set_up_food()
         critters = [Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(self._start_pop.get())]
@@ -123,16 +124,22 @@ class MainWindow(tk.Tk):
 
     def play_pause(self):
         if self._running:
-            self._running = False
-            self.play_button.configure(text="▶")
+            self.pause()
         elif self._world is None:
             self.load_button.flash()
         else:
-            self._running = True
-            self.play_button.configure(text="❚❚")
-            while self._running:
-                self.step()
-                time.sleep(0.05)
+            self.play()
+
+    def play(self):
+        self._running = True
+        self.play_button.configure(text="❚❚")
+        while self._running:
+            self.step()
+            time.sleep(0.05)
+
+    def pause(self):
+        self._running = False
+        self.play_button.configure(text="▶")
 
     def next_frame(self):
         if self._world is None:
