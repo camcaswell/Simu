@@ -172,7 +172,8 @@ class ScalingCanvas(tk.Frame):
         super().__init__(parent, bg=bg)
         self.border_frame = tk.Frame(self, bg=bg, relief='ridge', bd=2)    # exists to create border without screwing up canvas coordinates
         self.border_frame.grid_propagate(False)
-        self.canvas = tk.Canvas(self.border_frame, *args, highlightthickness=0, **kwargs)
+        kwargs = {'highlightthickness': 0, **kwargs}
+        self.canvas = tk.Canvas(self.border_frame, *args, **kwargs)
         self.border_frame.grid(row=0, column=0, sticky='nsew')
         self.canvas.grid(row=0, column=0, sticky='nsew')
 
@@ -211,7 +212,8 @@ class StyledNotebook(ttk.Notebook):
         style.configure('TNotebook', background='saddle brown')
         style.configure('TNotebook.Tab', background='light yellow', foreground='black', borderwidth=2)
 
-        super().__init__(parent, style='TNotebook')
+        kwargs = {**kwargs, 'style': 'TNotebook'}
+        super().__init__(parent, **kwargs)
 
 
 def launch():
