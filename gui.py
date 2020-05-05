@@ -3,6 +3,7 @@ from critter import Critter
 from food import Food
 
 import tkinter as tk
+import tkinter.ttk as ttk
 from random import randint
 from math import sqrt
 import time
@@ -51,25 +52,29 @@ class MainWindow(tk.Tk):
         self.create_widgets()
 
     def create_widgets(self):
-        # Main frame
-        main = tk.Frame(self, bg='tan', bd=10)
-        main.place(relwidth=1, relheight=1)
+        # Notebook
+        notebook = StyledNotebook(self)
+        notebook.place(relwidth=1, relheight=1)
+
+        # Main Tab
+        main_tab = tk.Frame(notebook, bg='tan', bd=10)
+        notebook.add(main_tab, text="Main")
 
         # World Canvas
-        world_panel = ScalingCanvas(main, bg='light yellow', highlightthickness=0)
+        world_panel = ScalingCanvas(main_tab, bg='light yellow')
         self.world_canvas = world_panel.canvas
 
         # Entry Panel
-        right_panel = tk.Frame(main, bg='saddle brown', relief='ridge', bd=2)
+        right_panel = tk.Frame(main_tab, bg='saddle brown', relief='ridge', bd=2)
 
-        size_entry = LabelEntry(right_panel, labeltext="World size", var=self._world_size)
-        start_pop_entry = LabelEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
+        size_entry = LabeledEntry(right_panel, labeltext="World size", var=self._world_size)
+        start_pop_entry = LabeledEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
 
         size_entry.grid(row=0, column=0, sticky='nw', padx=2, pady=(2,1))
         start_pop_entry.grid(row=1, column=0, sticky='nw', padx=2, pady=(1,2))
 
         # Button Panel
-        bot_panel = tk.Frame(main, bg='saddle brown', relief='ridge', bd=2)
+        bot_panel = tk.Frame(main_tab, bg='saddle brown', relief='ridge', bd=2)
 
         self.load_button = tk.Button(bot_panel, text="Load world", bg='light yellow', activebackground='orange', command=lambda: self.load_world())
         self.play_button = tk.Button(bot_panel, text="▶", bg='light yellow', activebackground='orange', command=lambda: self.play_pause())
@@ -81,13 +86,17 @@ class MainWindow(tk.Tk):
         step_button.grid(row=0, column=2, pady=2)
         test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
-        # Main Layout
-        main.rowconfigure(1, weight=1)
-        main.columnconfigure(1, weight=1)
+        # Main Tab Layout
+        main_tab.rowconfigure(1, weight=1)
+        main_tab.columnconfigure(1, weight=1)
 
         world_panel.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew", padx=1, pady=1)
         bot_panel.grid(row=2, column=0, padx=1, pady=1)
         right_panel.grid(row=0, column=2, padx=1, pady=1)
+
+        # Critter Tab
+        critter_tab = tk.Frame(notebook, bg='tan', bd=10)
+        notebook.add(critter_tab, text="Critters")
 
     def load_world(self):
         self.pause()
@@ -163,7 +172,7 @@ class ScalingCanvas(tk.Frame):
         super().__init__(parent, bg=bg)
         self.border_frame = tk.Frame(self, bg=bg, relief='ridge', bd=2)    # exists to create border without screwing up canvas coordinates
         self.border_frame.grid_propagate(False)
-        self.canvas = tk.Canvas(self.border_frame, *args, **kwargs)
+        self.canvas = tk.Canvas(self.border_frame, *args, highlightthickness=0, **kwargs)
         self.border_frame.grid(row=0, column=0, sticky='nsew')
         self.canvas.grid(row=0, column=0, sticky='nsew')
 
@@ -178,13 +187,31 @@ class ScalingCanvas(tk.Frame):
                 self.canvas.scale('all', 0, 0, scale, scale)
         self.bind('<Configure>', resize)
 
-class LabelEntry(tk.Frame):
+class LabeledEntry(tk.Frame):
     def __init__(self, parent, labeltext, var, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         label = tk.Label(self, text=labeltext, bg='light yellow', width=12, anchor='w')
         entry = tk.Entry(self, width=10, textvariable=var)
         label.grid(row=0, column=0)
         entry.grid(row=0, column=1)
+
+class StyledNotebook(ttk.Notebook):
+
+    def __init__(self, parent, *args, **kwargs):
+        style = ttk.Style()
+        style.element_create('Plain.Notebook.tab', 'from', 'default')
+        style.layout('TNotebook.Tab',
+            [('Plain.Notebook.tab', {'children':
+                [('Notebook.padding', {'side': 'top', 'children':
+                    [('Notebook.focus', {'side': 'top', 'children':
+                        [('Notebook.label', {'side': 'top', 'sticky': ''})],
+                    'sticky': 'nsew'})],
+                'sticky': 'nsew'})],
+            'sticky': 'nsew'})])
+        style.configure('TNotebook', background='saddle brown')
+        style.configure('TNotebook.Tab', background='light yellow', foreground='black', borderwidth=2)
+
+        super().__init__(parent, style='TNotebook')
 
 
 def launch():
