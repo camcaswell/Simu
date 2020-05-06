@@ -76,10 +76,10 @@ class MainWindow(tk.Tk):
         # Button Panel
         bot_panel = tk.Frame(main_tab, bg='saddle brown', relief='ridge', bd=2)
 
-        self.load_button = tk.Button(bot_panel, text="Load world", bg='light yellow', activebackground='orange', command=lambda: self.load_world())
-        self.play_button = tk.Button(bot_panel, text="▶", bg='light yellow', activebackground='orange', command=lambda: self.play_pause())
-        step_button = tk.Button(bot_panel, text="▶❚", bg='light yellow', activebackground='orange', command=lambda: self.next_frame())
-        test_button = tk.Button(bot_panel, text="test", bg='light yellow', activebackground='orange', command=lambda: self.test())
+        self.load_button = StyledButton(bot_panel, text="Load world", command=lambda: self.load_world())
+        self.play_button = StyledButton(bot_panel, text="▶", command=lambda: self.play_pause())
+        step_button = StyledButton(bot_panel, text="▶❚", command=lambda: self.next_frame())
+        test_button = StyledButton(bot_panel, text="test", command=lambda: self.test())
 
         self.load_button.grid(row=0, column=0, padx=(2,10), pady=2)
         self.play_button.grid(row=0, column=1, pady=2)
@@ -215,6 +215,10 @@ class StyledNotebook(ttk.Notebook):
         kwargs = {**kwargs, 'style': 'TNotebook'}
         super().__init__(parent, **kwargs)
 
+class StyledButton(tk.Button):
+    def __init__(self, parent, *args, **kwargs):
+        kwargs = {'bg':'light yellow', 'activebackground':'orange', **kwargs}
+        super().__init__(parent, *args, **kwargs)
 
 def launch():
     root = MainWindow()
