@@ -1,6 +1,7 @@
 from world import World
 from critter import Critter
 from food import Food
+from custom_widgets import *
 
 import tkinter as tk
 import tkinter.ttk as ttk
