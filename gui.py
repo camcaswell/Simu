@@ -166,59 +166,6 @@ class MainWindow(tk.Tk):
 
 
 
-class ScalingCanvas(tk.Frame):
-    def __init__(self, parent, *args, **kwargs):
-        bg = parent.cget('bg')
-        super().__init__(parent, bg=bg)
-        self.border_frame = tk.Frame(self, bg=bg, relief='ridge', bd=2)    # exists to create border without screwing up canvas coordinates
-        self.border_frame.grid_propagate(False)
-        kwargs = {'highlightthickness': 0, **kwargs}
-        self.canvas = tk.Canvas(self.border_frame, *args, **kwargs)
-        self.border_frame.grid(row=0, column=0, sticky='nsew')
-        self.canvas.grid(row=0, column=0, sticky='nsew')
-
-        def resize(event):
-            if event.width != self.old_width or event.height != self.old_height:
-                new_size = min(event.width, event.height)
-                self.border_frame.configure(width=new_size, height=new_size)
-                bd = int(self.border_frame.cget('bd'))
-                self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
-                scale = (new_size-2*bd) / self.canvas.old_width
-                self.canvas.old_width = new_size-2*bd
-                self.canvas.scale('all', 0, 0, scale, scale)
-        self.bind('<Configure>', resize)
-
-class LabeledEntry(tk.Frame):
-    def __init__(self, parent, labeltext, var, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        label = tk.Label(self, text=labeltext, bg='light yellow', width=12, anchor='w')
-        entry = tk.Entry(self, width=10, textvariable=var)
-        label.grid(row=0, column=0)
-        entry.grid(row=0, column=1)
-
-class StyledNotebook(ttk.Notebook):
-
-    def __init__(self, parent, *args, **kwargs):
-        style = ttk.Style()
-        style.element_create('Plain.Notebook.tab', 'from', 'default')
-        style.layout('TNotebook.Tab',
-            [('Plain.Notebook.tab', {'children':
-                [('Notebook.padding', {'side': 'top', 'children':
-                    [('Notebook.focus', {'side': 'top', 'children':
-                        [('Notebook.label', {'side': 'top', 'sticky': ''})],
-                    'sticky': 'nsew'})],
-                'sticky': 'nsew'})],
-            'sticky': 'nsew'})])
-        style.configure('TNotebook', background='saddle brown')
-        style.configure('TNotebook.Tab', background='light yellow', foreground='black', borderwidth=2)
-
-        kwargs = {**kwargs, 'style': 'TNotebook'}
-        super().__init__(parent, **kwargs)
-
-class StyledButton(tk.Button):
-    def __init__(self, parent, *args, **kwargs):
-        kwargs = {'bg':'light yellow', 'activebackground':'orange', **kwargs}
-        super().__init__(parent, *args, **kwargs)
 
 def launch():
     root = MainWindow()
