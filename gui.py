@@ -58,15 +58,15 @@ class MainWindow(tk.Tk):
         notebook.place(relwidth=1, relheight=1)
 
         # Main Tab
-        main_tab = tk.Frame(notebook, bg='tan', bd=10)
+        main_tab = tk.Frame(notebook, bg='#556144', bd=10)
         notebook.add(main_tab, text="Main")
 
         # World Canvas
-        world_panel = ScalingCanvas(main_tab, bg='light yellow')
+        world_panel = ScalingCanvas(main_tab, bg='#9CB466')
         self.world_canvas = world_panel.canvas
 
         # Entry Panel
-        right_panel = tk.Frame(main_tab, bg='saddle brown', relief='ridge', bd=2)
+        self.right_panel = tk.Frame(main_tab, bg='#73543F', relief='ridge', bd=2)
 
         size_entry = LabeledEntry(right_panel, labeltext="World size", var=self._world_size)
         start_pop_entry = LabeledEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
@@ -75,7 +75,7 @@ class MainWindow(tk.Tk):
         start_pop_entry.grid(row=1, column=0, sticky='nw', padx=2, pady=(1,2))
 
         # Button Panel
-        bot_panel = tk.Frame(main_tab, bg='saddle brown', relief='ridge', bd=2)
+        bot_panel = tk.Frame(main_tab, bg='#73543F', relief='ridge', bd=2)
 
         self.load_button = StyledButton(bot_panel, text="Load world", command=lambda: self.load_world())
         self.play_button = StyledButton(bot_panel, text="▶", command=lambda: self.play_pause())
