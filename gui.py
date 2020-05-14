@@ -21,7 +21,9 @@ class MainWindow(tk.Tk):
 
         # Current Extensions
         self.gui_world = GUI_World(World)
-        self.gui_species = [GUI_Species(Critter)]
+        default_species = GUI_Species(Critter)
+        default_species.icon_color = 'red'
+        self.gui_species = [default_species]
         #self.gui_foods = [GUI_Food(Food)]
 
         # Control state
@@ -72,18 +74,19 @@ class MainWindow(tk.Tk):
         self.test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
         # Extensions Panel
-        self.world_view = tk.LabelFrame(self.extensions_panel, text="World", height=20, bg='blue')
-        self.world_view.grid(row=0, column=0, sticky='ew', padx=(10, 5))
-        world_label = tk.Label(self.world_view, text="World size or whatever")
-        world_label.pack()
+        self.world_box = tk.LabelFrame(self.extensions_panel, text="WORLD", padx=2, pady=2, height=20, bg='blue')
+        self.world_box.grid(row=0, column=0, sticky='ew', padx=(10, 5))
+        world_view = self.gui_world.get_view(self.world_box)
+        #world_view.grid(row=0, column=0, padx=5, sticky='nsew')
+        world_view.pack(expand=True, fill='both')
 
-        self.critter_views = tk.LabelFrame(self.extensions_panel, text="Species", bg='red', height=20)
+        self.critter_views = tk.LabelFrame(self.extensions_panel, text="SPECIES", padx=2, pady=2, height=20, bg='red')
         self.critter_views.grid(row=1, column=0, sticky='nsew', padx=(10,5), pady=10)
 
         for species in self.gui_species:
             self.show_species_view(species)
 
-        self.food_views = tk.LabelFrame(self.extensions_panel, text="Food", height=20, bg='green')
+        self.food_views = tk.LabelFrame(self.extensions_panel, text="FOOD", padx=2, pady=2, height=20, bg='green')
         self.food_views.grid(row=2, column=0, sticky='nsew', padx=(10,5))
         food_label = tk.Label(self.food_views, text="Sorts of food here")
         food_label.pack()
@@ -147,7 +150,7 @@ class MainWindow(tk.Tk):
         self.play_button.configure(text="❚❚")
         while self.running:
             self.step()
-            time.sleep(0.05)
+            sleep(0.05)
 
     def pause(self):
         self.running = False
@@ -217,9 +220,26 @@ class GUI_World():
         self.name.set(world_base.__name__)
         self.size = tk.IntVar()
         self.size.set(self.base.SIZE)
+        self.view = None
+        self.panel = None
 
     def start_new(self):
         return self.base(self.size.get())   # food drops go here
+
+    def get_view(self, parent):
+        if self.view is None:
+            view = StyledViewFrame(parent)
+            bg = view.cget('bg')
+            name_label = tk.Label(view, textvariable=self.name, bg=bg)
+            size_entry = LabeledEntry(view, labeltext="Size", var=self.size, bg=bg)
+            desc_label = tk.Label(view, textvariable=self.desc, bg=bg)
+
+            name_label.grid(row=0, column=0, sticky='w')
+            size_entry.grid(row=1, column=0, sticky='w')
+            desc_label.grid(row=2, column=0, sticky='w')
+
+            self.view = view
+        return self.view
 
 class GUI_Species():
     '''
@@ -241,36 +261,23 @@ class GUI_Species():
         panel = tk.Frame(parent, *args, **kwargs)
 
 
-    def get_view(self, parent, *args, **kwargs):
+    def get_view(self, parent):
         if self.view is None:
-            view = tk.Frame(parent, *args, **kwargs)
-            color_frame = tk.Frame(view, bg=self.icon_color)
-            name_label = tk.Label(view, textvariable=self.name)
-            init_pop_entry = tk.Entry(view, textvariable=self.init_pop)
-            desc_label = tk.Label(view, textvariable=self.desc)
+            view = StyledViewFrame(parent)
+            bg = view.cget('bg')
+            self.color_icon = tk.Frame(view, width=15,  height=15, bg=self.icon_color)
+            name_label = tk.Label(view, textvariable=self.name, bg=bg)
+            init_pop_entry = LabeledEntry(view, labeltext="Pop.", var=self.init_pop, bg=bg)
+            desc_label = tk.Label(view, textvariable=self.desc, bg=bg)
 
-            color_frame.grid(row=0, column=0)
-            name_label.grid(row=0, column=1, sticky='nsew')
-            init_pop_entry.grid(row=0, column=2)
-            desc_label.grid(row=1, column=0, columnspan=3)
+            view.columnconfigure(1, weight=1)
+            self.color_icon.grid(row=0, column=0, sticky='w')
+            name_label.grid(row=0, column=1, sticky='w')
+            init_pop_entry.grid(row=1, column=0, columnspan=2, sticky='w')
+            desc_label.grid(row=2, column=0, columnspan=2, sticky='w')
 
             self.view = view
         return self.view
-
-def hier_c(widget, depth=0):
-    name = str(widget).split('.')[-1]
-    print('\t'*depth, name)
-    for child in widget.children.values():
-        hier_c(child, depth+1)
-
-def hier_s(widget, depth=0):
-    name = str(widget).split('.')[-1]
-    print('\t'*depth, name)
-    for slave in slaves(widget):
-        hier_s(slave, depth+1)
-
-def slaves(widget):
-    return widget.grid_slaves() + widget.pack_slaves() + widget.place_slaves()
 
 def launch():
     root = MainWindow()
