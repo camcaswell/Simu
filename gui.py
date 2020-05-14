@@ -1,6 +1,7 @@
 from world import World
 from critter import Critter
 from food import Food
+import load_extensions
 from custom_widgets import *
 
 import tkinter as tk
@@ -90,6 +91,39 @@ class MainWindow(tk.Tk):
         # Critter Tab
         critter_tab = tk.Frame(notebook, bg='tan', bd=10)
         notebook.add(critter_tab, text="Critters")
+
+        load_critter_button = StyledButton(critter_tab, text="Load New Species", command=lambda: self.species_popup())
+        load_critter_button.grid()
+
+    def species_popup(self):
+        options = load_extensions.load_critter()
+        popup = tk.Toplevel()
+        popup.minsize(350, 100)
+        popup.title("Choose Critter")
+        popup.rowconfigure(0, weight=1)
+        popup.columnconfigure(0, weight=1)
+        popup_frame = tk.Frame(popup, bg='tan')
+        popup_frame.grid(row=0, column=0, sticky='nsew')
+        popup_frame.columnconfigure(0, weight=1)
+        if options:
+            for i, (name, cls) in enumerate(options.items()):
+                button = StyledButton(popup_frame, text=f"   {name}   ", relief='ridge', pady=10, command=lambda cls=cls: self.species_popup_click(cls, popup))
+                button.grid(row=i, column=0, padx=20, pady=(20,0), sticky='ew')
+            button.grid(row=i, column=0, padx=20, pady=(20,20))    # redoing last one to get padding at the end
+        else:
+            item = tk.Label(popup_frame, text="No Critter extensions found in that file")
+
+    def species_popup_click(self, cls, popup):
+        new_species = GUI_Species(cls)
+        self.gui_species.append(new_species)
+        self.show_species_view(new_species)
+        popup.destroy()
+
+    def show_species_view(self, species):
+        view = species.get_view(self.critter_views)
+        view.grid(sticky='ew')
+
+    # Map Control
 
     def load_world(self):
         self.pause()
