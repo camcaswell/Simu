@@ -20,16 +20,17 @@ class ScalingCanvas(tk.Frame):
         self.border_frame.grid(row=0, column=0, sticky='nsew')
         self.canvas.grid(row=0, column=0, sticky='nsew')
 
-        def resize(event):
-            if event.width != self.old_width or event.height != self.old_height:
-                new_size = min(event.width, event.height)
-                self.border_frame.configure(width=new_size, height=new_size)
+        self.bind('<Configure>', lambda event: self.resize(event))
+
+    def resize(self, event):
+        if event.width != self.old_width or event.height != self.old_height:
+            new_size = min(event.width, event.height)
+            self.border_frame.configure(width=new_size, height=new_size)
                 bd = int(self.border_frame.cget('bd'))
                 self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
-                scale = (new_size-2*bd) / self.canvas.old_width
-                self.canvas.old_width = new_size-2*bd
-                self.canvas.scale('all', 0, 0, scale, scale)
-        self.bind('<Configure>', resize)
+            scale = (new_size-2*bd) / self.canvas.old_width
+            self.canvas.old_width = new_size-2*bd
+            self.canvas.scale('all', 0, 0, scale, scale)
 
 class LabeledEntry(tk.Frame):
     '''
