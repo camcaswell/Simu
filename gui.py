@@ -8,7 +8,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from random import randint
 from math import sqrt
-import time
+from time import sleep
 from types import MethodType
 
 class MainWindow(tk.Tk):
