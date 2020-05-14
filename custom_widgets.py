@@ -148,6 +148,46 @@ class CompositeContainer():
 class ScrollFrame(CompositeContainer):
     '''
         A Frame with a vertical scroll bar.
+    '''
+    def __init__(self, parent, *args, scrollside='right', **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        bg = kwargs.get('bg', kwargs.get('background', None))
+        self.canvas = tk.Canvas(self.exterior, bd=0, bg=bg, highlightthickness=0)
+        self.scrollbar_box = tk.Frame(self.exterior, bg=bg)
+        self.scrollbar_box.pack_propagate(False)
+        self.scrollbar = tk.Scrollbar(self.scrollbar_box, orient='vertical', command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        contentcol = (0 if scrollside=='right' else 1)
+        self.canvas.grid(row=0, column=contentcol, sticky='nsew')
+        self.scrollbar_box.grid(row=0, column=1-contentcol)  # height to be set by resize event method
+        self.scrollbar.pack(expand=True, fill='y')
+        self.exterior.columnconfigure(contentcol, weight=1)
+        self.exterior.rowconfigure(0, weight=1)
+
+        self.interior = tk.Frame(self.canvas, bg=bg)     # recreated so that it has canvas as parent
+        self.interior_id = self.canvas.create_window(0, 0, window=self.interior, anchor='nw')
+
+        self.interior.bind('<Configure>', lambda event: self.reset_scrollregion(event))
+        self.exterior.bind('<Configure>', lambda event: self.resize(event))
+
+    def reset_scrollregion(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox('all'))
+
+    def resize(self, event):
+        if (max_desired := self.interior.winfo_reqheight()) > event.height:
+            new_height = event.height
+            self.scrollbar.pack(expand=True, fill='y')
+        else:
+            new_height = max_desired
+            self.scrollbar.pack_forget()
+        new_height = min(self.interior.winfo_reqheight(), event.height)
+        self.canvas.configure(height=new_height, width=self.interior.winfo_reqwidth())
+        self.scrollbar_box.configure(height=new_height, width=self.scrollbar.winfo_reqwidth())
+
+class BoundedScrollFrame(CompositeContainer):
+    '''
+        A Frame with a vertical scroll bar.
 
         Setting maxw and maxh will limit how far it expands.
 
