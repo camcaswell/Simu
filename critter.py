@@ -42,6 +42,8 @@ class CustomCritterMeta(type):
 
 class Critter(metaclass=CustomCritterMeta):
 
+    DESCRIPTION = "The default species of critter"
+
     # default starting values
     START_TRAITS = {
         'per_critter': 60,                  # perception range of other critters
@@ -113,7 +115,6 @@ class Critter(metaclass=CustomCritterMeta):
             max_age = self.MAX_AGE
         if traits is None:
             traits = self.START_TRAITS
-
 
         # facts
         self.bio = bio

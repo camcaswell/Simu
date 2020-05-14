@@ -2,9 +2,11 @@ from random import random
 
 class Food:
 
-    default_amount = 60
+    DESCRIPTION = "The default food"
 
-    def __init__(self, world, amount=default_amount, loc=None):
+    DEFAULT_AMOUNT = 60
+
+    def __init__(self, world, amount=DEFAULT_AMOUNT, loc=None):
         self.world = world
         if loc is None:
             loc = (random()*world.size, random()*world.size)

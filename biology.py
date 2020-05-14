@@ -4,6 +4,8 @@ from math import log
 
 class BioAssumptions:
 
+    DESCRIPTION = "The default biological assumptions"
+
     @classmethod
     def derive_reach(cls, critter):
         # mass ~ length^3, reach is about half of length
@@ -11,7 +13,7 @@ class BioAssumptions:
 
     @classmethod
     def derive_max_energy(cls, critter):
-        return 10 * critter.mass
+        return 5 * critter.mass
 
     @classmethod
     def derive_max_speed(cls, critter):

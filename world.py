@@ -7,6 +7,8 @@ from math import inf as INF, ceil
 
 class World:
 
+    DESCRIPTION = "The default world"
+
     SIZE = 200                  # side length of square in which food can drop
     TURN_DURATION = 10          # affects the "resolution" of the sim; lower numbers mean fewer things happening per turn
     CHUNK_SIZE = 30             # quick n dirty testing suggests this is ~optimal
