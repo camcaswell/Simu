@@ -31,9 +31,9 @@ class ScalingCanvas(tk.Frame):
         self.border_frame.configure(width=new_size, height=new_size)
         bd = int(self.border_frame.cget('bd'))
         self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
-            scale = (new_size-2*bd) / self.canvas.old_width
-            self.canvas.old_width = new_size-2*bd
-            self.canvas.scale('all', 0, 0, scale, scale)
+        scale = (new_size-2*bd) / self.canvas.old_width
+        self.canvas.old_width = new_size-2*bd
+        self.canvas.scale('all', 0, 0, scale, scale)
 
 class LabeledEntry(tk.Frame):
     '''
@@ -74,6 +74,14 @@ class StyledButton(tk.Button):
     '''
     def __init__(self, parent, *args, **kwargs):
         kwargs = {'bg':'light yellow', 'activebackground':'orange', **kwargs}
+        super().__init__(parent, *args, **kwargs)
+
+class StyledViewFrame(tk.Frame):
+    '''
+        A Frame for displaying extension info with a standardized appearance.
+    '''
+    def __init__(self, parent, *args, **kwargs):
+        kwargs = {'bg':'tan', 'padx':2, 'bd':2, 'relief':'groove', **kwargs}
         super().__init__(parent, *args, **kwargs)
 
 class BoundedFrame(tk.Frame):
