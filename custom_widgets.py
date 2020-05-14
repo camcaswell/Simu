@@ -14,20 +14,23 @@ class ScalingCanvas(tk.Frame):
         bg = parent.cget('bg')
         super().__init__(parent, bg=bg)
         self.border_frame = tk.Frame(self, bg=bg, relief='ridge', bd=2)    # exists to create border without screwing up canvas coordinates
-        self.border_frame.grid_propagate(False)
         kwargs = {'highlightthickness': 0, **kwargs}
         self.canvas = tk.Canvas(self.border_frame, *args, **kwargs)
-        self.border_frame.grid(row=0, column=0, sticky='nsew')
-        self.canvas.grid(row=0, column=0, sticky='nsew')
+        self.border_frame.grid(row=0, column=0)
+        self.canvas.grid(row=0, column=0)
+
+        self.canvas.old_width = self.winfo_width()
+        self.canvas.old_height = self.winfo_height()
 
         self.bind('<Configure>', lambda event: self.resize(event))
 
     def resize(self, event):
-        if event.width != self.old_width or event.height != self.old_height:
-            new_size = min(event.width, event.height)
-            self.border_frame.configure(width=new_size, height=new_size)
-                bd = int(self.border_frame.cget('bd'))
-                self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
+        other_widgets = [w for w in self.grid_slaves() if w is not self.border_frame]
+        adj_height = event.height - sum([w.winfo_reqheight() for w in other_widgets])   #assuming other widgets are stacked vertically
+        new_size = min(event.width, adj_height)
+        self.border_frame.configure(width=new_size, height=new_size)
+        bd = int(self.border_frame.cget('bd'))
+        self.canvas.configure(width=new_size-2*bd, height=new_size-2*bd)
             scale = (new_size-2*bd) / self.canvas.old_width
             self.canvas.old_width = new_size-2*bd
             self.canvas.scale('all', 0, 0, scale, scale)

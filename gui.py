@@ -8,20 +8,7 @@ import tkinter.ttk as ttk
 from random import randint
 from math import sqrt
 import time
-
-
-# Monkey patching
-
-def _create_circle(self, x0, y0, r, **kwargs):
-    return self.create_oval(x0-r, y0-r, x0+r, y0+r, **kwargs)
-tk.Canvas.create_circle = _create_circle
-
-temp = tk.Widget.__init__
-def _new_init(self, *args, **kwargs):
-    temp(self, *args, **kwargs)
-    self.old_width = self.winfo_width()
-    self.old_height = self.winfo_height()
-tk.Widget.__init__ = _new_init
+from types import MethodType
 
 class MainWindow(tk.Tk):
 
@@ -31,17 +18,14 @@ class MainWindow(tk.Tk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # CONTROL STATE
-        self._running = False
-        self._world = None
-        self._world_size = tk.IntVar()
-        self._world_size.set(400)
+        # Current Extensions
+        self.gui_world = GUI_World(World)
+        self.gui_species = [GUI_Species(Critter)]
+        #self.gui_foods = [GUI_Food(Food)]
 
-        self._start_pop = tk.IntVar()
-        self._start_pop.set(50)
-
-        # OTHER
-        self.world_canvas = None
+        # Control state
+        self.world_state = None
+        self.running = False
 
         # Initial size and placement
         monitor_width = self.winfo_screenwidth()
@@ -58,42 +42,50 @@ class MainWindow(tk.Tk):
         notebook.place(relwidth=1, relheight=1)
 
         # Main Tab
-        main_tab = tk.Frame(notebook, bg='#556144', bd=10)
+        main_tab = tk.Frame(notebook, bg='#556144', bd=5)
         notebook.add(main_tab, text="Main")
 
-        # World Canvas
-        world_panel = ScalingCanvas(main_tab, bg='#9CB466')
-        self.world_canvas = world_panel.canvas
+        # Main Tab Layout
+        main_tab.rowconfigure(0, weight=1)
+        main_tab.columnconfigure(0, weight=1)
 
-        # Entry Panel
-        self.right_panel = tk.Frame(main_tab, bg='#73543F', relief='ridge', bd=2)
+        self.extensions_panel = ScrollFrame(main_tab, bg='#73543F', relief='ridge', bd=2, width=50, pady=10)
+        self.map_panel = WorldMap(main_tab, bg='#9CB466')
 
-        size_entry = LabeledEntry(right_panel, labeltext="World size", var=self._world_size)
-        start_pop_entry = LabeledEntry(right_panel, labeltext="Initial pop.", var=self._start_pop)
+        self.map_panel.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.extensions_panel.grid(row=0, column=1, sticky='n', padx=2, pady=2)
 
-        size_entry.grid(row=0, column=0, sticky='nw', padx=2, pady=(2,1))
-        start_pop_entry.grid(row=1, column=0, sticky='nw', padx=2, pady=(1,2))
+        # Map Control
 
-        # Button Panel
-        bot_panel = tk.Frame(main_tab, bg='#73543F', relief='ridge', bd=2)
+        self.map_controls = tk.Frame(self.map_panel, bg='#73543F', relief='ridge', bd=2)
+        self.map_controls.grid(row=1, column=0, sticky='nw', pady=(4,0))
 
-        self.load_button = StyledButton(bot_panel, text="Load world", command=lambda: self.load_world())
-        self.play_button = StyledButton(bot_panel, text="▶", command=lambda: self.play_pause())
-        step_button = StyledButton(bot_panel, text="▶❚", command=lambda: self.next_frame())
-        test_button = StyledButton(bot_panel, text="test", command=lambda: self.test())
+        self.load_button = StyledButton(self.map_controls, text="Load world", command=lambda: self.load_world())
+        self.play_button = StyledButton(self.map_controls, text="▶", command=lambda: self.play_pause())
+        self.step_button = StyledButton(self.map_controls, text="▶❚", command=lambda: self.next_frame())
+        self.test_button = StyledButton(self.map_controls, text="test", command=lambda: self.test())
 
         self.load_button.grid(row=0, column=0, padx=(2,10), pady=2)
         self.play_button.grid(row=0, column=1, pady=2)
-        step_button.grid(row=0, column=2, pady=2)
-        test_button.grid(row=0, column=3, padx=(10,2), pady=2)
+        self.step_button.grid(row=0, column=2, pady=2)
+        self.test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
-        # Main Tab Layout
-        main_tab.rowconfigure(1, weight=1)
-        main_tab.columnconfigure(1, weight=1)
+        # Extensions Panel
+        self.world_view = tk.LabelFrame(self.extensions_panel, text="World", height=20, bg='blue')
+        self.world_view.grid(row=0, column=0, sticky='ew', padx=(10, 5))
+        world_label = tk.Label(self.world_view, text="World size or whatever")
+        world_label.pack()
 
-        world_panel.grid(row=0, column=0, rowspan=2, columnspan=2, sticky="nsew", padx=1, pady=1)
-        bot_panel.grid(row=2, column=0, padx=1, pady=1)
-        right_panel.grid(row=0, column=2, padx=1, pady=1)
+        self.critter_views = tk.LabelFrame(self.extensions_panel, text="Species", bg='red', height=20)
+        self.critter_views.grid(row=1, column=0, sticky='nsew', padx=(10,5), pady=10)
+
+        for species in self.gui_species:
+            self.show_species_view(species)
+
+        self.food_views = tk.LabelFrame(self.extensions_panel, text="Food", height=20, bg='green')
+        self.food_views.grid(row=2, column=0, sticky='nsew', padx=(10,5))
+        food_label = tk.Label(self.food_views, text="Sorts of food here")
+        food_label.pack()
 
         # Critter Tab
         critter_tab = tk.Frame(notebook, bg='tan', bd=10)
@@ -101,15 +93,49 @@ class MainWindow(tk.Tk):
 
     def load_world(self):
         self.pause()
-        world = self._world = World(size=self._world_size.get())
+        world = self.world_state = self.gui_world.start_new()
         world.set_up_food()
-        critters = [Critter(world, age=randint(0,Critter.MAX_AGE)) for _ in range(self._start_pop.get())]
-        world.add_critters(critters)
+        for species in self.gui_species:
+            critters = [species(world, age=randint(0,species.MAX_AGE)) for _ in range(species.init_pop.get())]
+            world.add_critters(critters)
         self.draw_world()
 
+    def play_pause(self):
+        if self.running:
+            self.pause()
+        elif self.world_state is None:
+            self.load_button.flash()
+        else:
+            self.play()
+
+    def play(self):
+        self.running = True
+        self.play_button.configure(text="❚❚")
+        while self.running:
+            self.step()
+            time.sleep(0.05)
+
+    def pause(self):
+        self.running = False
+        self.play_button.configure(text="▶")
+
+    def next_frame(self):
+        self.pause()
+        if self.world_state is None:
+            self.load_button.flash()
+            return
+        self.step()
+
+    def step(self):
+        self.world_state.step()
+        self.draw_world()
+        self.map_panel.canvas.update()
+
+    # Map Drawing
+
     def draw_world(self):
-        world = self._world
-        canvas = self.world_canvas
+        world = self.world_state
+        canvas = self.map_panel.canvas
         canvas.delete('critter')
         canvas.delete('food')
         for food in world.all_food:
@@ -120,53 +146,97 @@ class MainWindow(tk.Tk):
         canvas.scale('all', 0, 0, scale, scale)
 
     def draw_critter(self, critter):
+        canvas = self.map_panel.canvas
         diam = critter.reach
         x,y = critter.loc
         x -= diam/2
         y -= diam/2
-        self.world_canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
-        self.world_canvas.create_circle(x, y, critter.per_food, tags='critter')
+        canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
+        canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
+        canvas = self.map_panel.canvas
         radius = sqrt(food.amount_left)/3
         x,y = food.loc
-        self.world_canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
-
-    def play_pause(self):
-        if self._running:
-            self.pause()
-        elif self._world is None:
-            self.load_button.flash()
-        else:
-            self.play()
-
-    def play(self):
-        self._running = True
-        self.play_button.configure(text="❚❚")
-        while self._running:
-            self.step()
-            time.sleep(0.05)
-
-    def pause(self):
-        self._running = False
-        self.play_button.configure(text="▶")
-
-    def next_frame(self):
-        if self._world is None:
-            self.load_button.flash()
-            return
-        self.step()
-
-    def step(self):
-        self._world.step()
-        self.draw_world()
-        self.world_canvas.update()
+        canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
 
     def test(self):
-        pass
+        print(self.extensions_panel.scrollbar_box.winfo_width())
+
+class WorldMap(ScalingCanvas):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+
+        def create_circle(self, x0, y0, r, **kwargs):
+            return self.create_oval(x0-r, y0-r, x0+r, y0+r, **kwargs)
+        self.canvas.create_circle = MethodType(create_circle, self.canvas)
+
+class GUI_World():
+    '''
+        Represents a World subclass loaded into the GUI and possibly modified via the GUI
+    '''
+    def __init__(self, world_base):
+        self.base = world_base
+        self.desc = tk.StringVar()
+        self.desc.set(self.base.DESCRIPTION)
+        self.name = tk.StringVar()
+        self.name.set(world_base.__name__)
+        self.size = tk.IntVar()
+        self.size.set(self.base.SIZE)
+
+    def start_new(self):
+        return self.base(self.size.get())   # food drops go here
+
+class GUI_Species():
+    '''
+        Represents a Critter subclass loaded into the GUI and possibly modified via the GUI
+    '''
+    def __init__(self, species_base):
+        self.base = species_base
+        self.desc = tk.StringVar()
+        self.desc.set(species_base.DESCRIPTION)
+        self.name = tk.StringVar()
+        self.name.set(species_base.__name__)
+        self.icon_color = ''                # use StringVar trace?
+        self.init_pop = tk.IntVar()
+        self.init_pop.set(0)
+        self.view = None
+        self.panel = None
+
+    def get_panel(self, parent, *args, **kwargs):
+        panel = tk.Frame(parent, *args, **kwargs)
 
 
+    def get_view(self, parent, *args, **kwargs):
+        if self.view is None:
+            view = tk.Frame(parent, *args, **kwargs)
+            color_frame = tk.Frame(view, bg=self.icon_color)
+            name_label = tk.Label(view, textvariable=self.name)
+            init_pop_entry = tk.Entry(view, textvariable=self.init_pop)
+            desc_label = tk.Label(view, textvariable=self.desc)
 
+            color_frame.grid(row=0, column=0)
+            name_label.grid(row=0, column=1, sticky='nsew')
+            init_pop_entry.grid(row=0, column=2)
+            desc_label.grid(row=1, column=0, columnspan=3)
+
+            self.view = view
+        return self.view
+
+def hier_c(widget, depth=0):
+    name = str(widget).split('.')[-1]
+    print('\t'*depth, name)
+    for child in widget.children.values():
+        hier_c(child, depth+1)
+
+def hier_s(widget, depth=0):
+    name = str(widget).split('.')[-1]
+    print('\t'*depth, name)
+    for slave in slaves(widget):
+        hier_s(slave, depth+1)
+
+def slaves(widget):
+    return widget.grid_slaves() + widget.pack_slaves() + widget.place_slaves()
 
 def launch():
     root = MainWindow()
