@@ -82,8 +82,9 @@ class BoundedFrame(tk.Frame):
         super().__init__(parent, *args, **kwargs)
         self.maxw = maxw
         self.maxh = maxh
-        self.config_callbacks = [lambda event: self.resize(event)]
+
         self.bind('<Configure>', lambda event: self.on_config(event))
+        self.config_callbacks = [lambda event: self.resize(event)]
 
     def on_config(self, event):
         for func in self.config_callbacks:
