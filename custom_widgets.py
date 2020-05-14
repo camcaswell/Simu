@@ -185,6 +185,5 @@ class ScrollFrame(CompositeContainer):
             new_height = max_desired
             self.scrollbar.pack_forget()
         new_height = min(self.interior.winfo_reqheight(), event.height)
-        self.canvas.itemconfigure(self.interior_id, width=event.width)
-        self.canvas.configure(height=new_height)
+        self.canvas.configure(height=new_height, width=self.interior.winfo_reqwidth())
         self.scrollbar_box.configure(height=new_height, width=self.scrollbar.winfo_reqwidth())
