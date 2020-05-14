@@ -164,7 +164,7 @@ class World:
         self.drop_food()
         self.abundance = temp
         for food in self.all_food:
-            food.amount_left = random() * food.default_amount
+            food.amount_left = random() * food.DEFAULT_AMOUNT
 
     def get_generator(self, turn_limit = INF):
         while self.turn < turn_limit:
