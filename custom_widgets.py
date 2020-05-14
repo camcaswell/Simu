@@ -41,8 +41,9 @@ class LabeledEntry(tk.Frame):
     '''
     def __init__(self, parent, labeltext, var, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
-        label = tk.Label(self, text=labeltext, bg='light yellow', width=12, anchor='w')
-        entry = tk.Entry(self, width=10, textvariable=var)
+        bg = kwargs.get('bg', kwargs.get('background', None))
+        label = tk.Label(self, text=labeltext, anchor='w', bg=bg)
+        entry = tk.Entry(self, width=10, textvariable=var, bg=bg)
         label.grid(row=0, column=0)
         entry.grid(row=0, column=1)
 
