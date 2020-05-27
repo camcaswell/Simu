@@ -84,6 +84,14 @@ class StyledViewFrame(tk.Frame):
         kwargs = {'bg':'tan', 'padx':2, 'bd':2, 'relief':'groove', **kwargs}
         super().__init__(parent, *args, **kwargs)
 
+class StyledPanelFrame(tk.Frame):
+    '''
+        A Frame for displaying and editing extension info with a standardized appearance.
+    '''
+    def __init__(self, parent, *args, **kwargs):
+        kwargs = {'bg':'tan', 'padx':2, 'bd':2, 'relief':'groove', **kwargs}
+        super().__init__(parent, *args, **kwargs)
+
 class BoundedFrame(tk.Frame):
     '''
         Expands to given dimensions but no further.
