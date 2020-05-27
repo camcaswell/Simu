@@ -22,8 +22,8 @@ class MainWindow(tk.Tk):
         # Current Extensions
         self.gui_world = GUI_World(World)
         default_species = GUI_Species(Critter)
-        default_species.icon_color = 'red'
-        self.gui_species = [default_species]
+        default_species.icon_color.set('maroon')
+        self.gui_species = {Critter: default_species}
         #self.gui_foods = [GUI_Food(Food)]
 
         # Control state
@@ -83,9 +83,6 @@ class MainWindow(tk.Tk):
         self.critter_views = tk.LabelFrame(self.extensions_panel, text="SPECIES", padx=2, pady=2, height=20, bg='red')
         self.critter_views.grid(row=1, column=0, sticky='nsew', padx=(10,5), pady=10)
 
-        for species in self.gui_species:
-            self.show_species_view(species)
-
         self.food_views = tk.LabelFrame(self.extensions_panel, text="FOOD", padx=2, pady=2, height=20, bg='green')
         self.food_views.grid(row=2, column=0, sticky='nsew', padx=(10,5))
         food_label = tk.Label(self.food_views, text="Sorts of food here")
@@ -98,6 +95,8 @@ class MainWindow(tk.Tk):
         load_critter_button = StyledButton(critter_tab, text="Load New Species", command=lambda: self.species_popup())
         load_critter_button.grid()
 
+        for species in set(self.gui_species.values()):
+            self.show_species_view(species)
     def species_popup(self):
         options = load_extensions.load_critter()
         popup = tk.Toplevel()
@@ -118,7 +117,7 @@ class MainWindow(tk.Tk):
 
     def species_popup_click(self, cls, popup):
         new_species = GUI_Species(cls)
-        self.gui_species.append(new_species)
+        self.gui_species[cls] = new_species
         self.show_species_view(new_species)
         popup.destroy()
 
@@ -132,8 +131,8 @@ class MainWindow(tk.Tk):
         self.pause()
         world = self.world_state = self.gui_world.start_new()
         world.set_up_food()
-        for species in self.gui_species:
-            critters = [species(world, age=randint(0,species.MAX_AGE)) for _ in range(species.init_pop.get())]
+        for species_base, species_guirep in self.gui_species.items():
+            critters = [species_base(world, age=randint(0,species_base.MAX_AGE)) for _ in range(species_guirep.init_pop.get())]
             world.add_critters(critters)
         self.draw_world()
 
@@ -183,12 +182,14 @@ class MainWindow(tk.Tk):
         canvas.scale('all', 0, 0, scale, scale)
 
     def draw_critter(self, critter):
+        gui_rep = self.gui_species[type(critter)]
+        color = gui_rep.icon_color.get()
         canvas = self.map_panel.canvas
         diam = critter.reach
         x,y = critter.loc
         x -= diam/2
         y -= diam/2
-        canvas.create_rectangle(x, y, x+diam, y+diam, fill='red', outline='red', tags='critter')
+        canvas.create_rectangle(x, y, x+diam, y+diam, fill=color, outline=color, tags='critter')
         canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
@@ -196,6 +197,7 @@ class MainWindow(tk.Tk):
         radius = sqrt(food.amount_left)/3
         x,y = food.loc
         canvas.create_circle(x, y, radius, fill='green', outline='green', tags='food')
+
 
     def test(self):
         print(self.extensions_panel.scrollbar_box.winfo_width())
@@ -251,11 +253,20 @@ class GUI_Species():
         self.desc.set(species_base.DESCRIPTION)
         self.name = tk.StringVar()
         self.name.set(species_base.__name__)
-        self.icon_color = ''                # use StringVar trace?
         self.init_pop = tk.IntVar()
         self.init_pop.set(0)
         self.view = None
         self.panel = None
+
+        self.icon_color = tk.StringVar()
+        self.icon_color.set('')
+        def color_set_callback(var, indx, mode):
+            if self.view is not None:
+                self.color_icon_view.configure(bg=var.get())
+            if self.panel is not None:
+                self.color_icon_panel.configure(bg=var.get())
+        self.icon_color.trace_add('write', color_set_callback)
+
 
     def get_panel(self, parent, *args, **kwargs):
         panel = tk.Frame(parent, *args, **kwargs)
@@ -265,13 +276,13 @@ class GUI_Species():
         if self.view is None:
             view = StyledViewFrame(parent)
             bg = view.cget('bg')
-            self.color_icon = tk.Frame(view, width=15,  height=15, bg=self.icon_color)
+            self.color_icon_view = tk.Frame(view, width=15,  height=15, bg=self.icon_color.get())
             name_label = tk.Label(view, textvariable=self.name, bg=bg)
             init_pop_entry = LabeledEntry(view, labeltext="Pop.", var=self.init_pop, bg=bg)
             desc_label = tk.Label(view, textvariable=self.desc, bg=bg)
 
             view.columnconfigure(1, weight=1)
-            self.color_icon.grid(row=0, column=0, sticky='w')
+            self.color_icon_view.grid(row=0, column=0, sticky='w')
             name_label.grid(row=0, column=1, sticky='w')
             init_pop_entry.grid(row=1, column=0, columnspan=2, sticky='w')
             desc_label.grid(row=2, column=0, columnspan=2, sticky='w')
