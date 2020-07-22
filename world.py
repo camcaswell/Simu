@@ -136,6 +136,8 @@ class World:
                 critter.last_result = result
                 if result is Results.SUCCESS:
                     self.results[target] = Results.KILLED
+                    target.last_result = Results.KILLED
+                    target._die()
 
         for critter in turn_order:
             decision, target = self.decisions[critter]
