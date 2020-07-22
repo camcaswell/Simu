@@ -1,97 +1,72 @@
 from biology import BioAssumptions
-from critter import Critter
-from world import World, Food
+from critter import Critter, Decisions, Results
+from world import World
+from food import Food
 import util
 
-class MyBioAssumptions(BioAssumptions):
-    # this class is just a container for methods encoding assumptions about how biology works
-
-    # overwrite methods to change how biology works in your sim
-    @classmethod
-    def move_cost(cls, critter, dist):
-        return 0.1 * critter.mass * dist
-
-    @classmethod
-    def derive_metabolic_upkeep(cls, critter):
-        return .5 * super().derive_metabolic_upkeep(critter)
-
-
-class MySpecies(Critter):
+class Predator(Critter):
     def __init__(self, world, *args, **kwargs):
-        super().__init__(world, *args, bio=MyBioAssumptions, **kwargs)
+        super().__init__(world, *args, **kwargs)
+    
+    DESCRIPTION = "A predator species"
 
     # overwriting the default initial traits of my species
     START_TRAITS = {
-        'per_critter': 10,                    # perception range of other critters, currently does nothing
-        'per_food': 8,                      # perception range of food drops
+        'per_critter': 60,                  # perception range of other critters
+        'per_food': 60,                     # perception range of food drops
         'wander_effort': 0.9,               # proportion of max speed Critter moves at when no goal in sight
+        'wander_faith': 40,                 # how close they adhere to their previous heading when wandering
 
-        'mass': 20,                         # determines a lot of derived stats
-        'reproduction_threshold': 0.4,      # proportion of max energy at which Critter will reproduce
-        'energy_inheritance': 0.15,         # proportion of max energy passed on to each child
+        'mass': 15,                         # determines a lot of derived stats
+        'reproduction_threshold': 0.8,      # proportion of max energy at which Critter will reproduce
+        'energy_inheritance': 0.5,          # proportion of max energy passed on to each child
+
+        'flee_range': 5,
+
+        'behav_weight_wander': .75,
+        'behav_weight_flee': 0.8,
+        'behav_weight_food': 2,
+        'behav_weight_mate': 2,
+        'behav_weight_predator': 3,
+        'behav_weight_competitor': 30,
+
+        'nav_angleoffset_food': 1,
+        'nav_angleoffset_mate': 2,
+        'nav_angleoffset_predator': 3,
+        'nav_angleoffset_competitor': 3,
+
+        'nav_distance_food': 1,
+        'nav_distance_mate': 2,
+        'nav_distance_pred': 3,
+        'nav_distance_competitor': 1,
     }
+    
+    @property
+    def visible_food(self):
+        return [c in self.visible_critters if self._is_prey(c)]
 
-    def act(self):
-        if self.age < .2 * self.max_age:
-            self._act_juv()
-        else:
-            super().act()
-
-    def _act_juv(self):
-        # same as super().act except the option to reproduce is removed
-        food_options = self._visible_food()
-        if food_options:
-            rho,nearest = food_options[0]
-            phi = util.rel_phi(self.loc, nearest.loc)
-            if rho <= self.max_speed:
-                self._move(rho, phi)
-                self.eat(nearest)
-            else:
-                self._move(self.max_speed, phi)
-        else:
-            self.wander()
-
-    def reproduce(self):
-        # will be called by Critter.act
-        self.energy -= self.bio.repro_cost(self)    # currently there is no flat cost by default
-        super().reproduce()
-
-
-class MyWorld(World):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def step(self):
-        # Overwrite the step method to change how each turn is handled
-        if self.turn < 1000 and self.turn % 10 == 0:
-            self.abundance -= .001
-        super().step()
-
-class MyFood(Food):
-    def __init__(self, world, *args, **kwargs):
-        super().__init__(world, *args, kind="grass_or_something", amount=25, good_for=30)
-
-
-
-
-
-
-def run():
-    world = MyWorld()
-    my_critters = {MySpecies(world) for _ in range(40)}
-    world.register_food_drop(MyFood, mu=10, cv=.1)
-
-    # spreading food with variety of ages before adding critters
-    for _ in range(10):
-        world.step()
-    world.turn = 0
-    world.add_critters(my_critters)
-
-    while world.turn < 1000 and len(world.critters) > 0:
-        world.step()
-        print(f"{world.turn}: {len(world.critters)}")
-
-    world.report()
-
-if __name__ == '__main__':
-    run()
+    def seek_food(self):
+        # should probably rewrite default seek_food to service full carnivore-herbivore spectrum
+        decision, target = super().seek_food()
+        if decision is Decisions.EAT:
+            decision = Decisions.PREDATE
+        return decision, target
+       
+    def predate(self, prey):
+        # prey is actually killed in World.step
+        self.energy += prey.energy     # something has to be done about structural energy and carcasses etc
+        return Results.SUCCESS
+        
+    def _food_eval(self, prey):
+        return self.behav_weight_food * prey.energy * (self.max_energy/self.energy) * 1
+        
+    def _is_prey(self, other):
+        return type(other) is Prey
+    
+Class Prey(Critter):
+    
+    DESCRIPTION = "A prey species"
+    
+    def _is_predator(self, other):
+        return type(other) is Predator
+    
