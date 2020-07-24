@@ -43,7 +43,7 @@ class Predator(Critter):
     
     @property
     def visible_food(self):
-        return [c in self.visible_critters if self._is_prey(c)]
+        return [c for c in self.visible_critters if self._is_prey(c)]
 
     def seek_food(self):
         # should probably rewrite default seek_food to service full carnivore-herbivore spectrum
@@ -63,7 +63,7 @@ class Predator(Critter):
     def _is_prey(self, other):
         return type(other) is Prey
     
-Class Prey(Critter):
+class Prey(Critter):
     
     DESCRIPTION = "A prey species"
     
