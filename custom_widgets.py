@@ -92,6 +92,15 @@ class StyledPanelFrame(tk.Frame):
         kwargs = {'bg':'tan', 'padx':2, 'bd':2, 'relief':'groove', **kwargs}
         super().__init__(parent, *args, **kwargs)
 
+class StyledCheckbutton(tk.Checkbutton):
+    '''
+        A checkbox with a standardized appearance.
+    '''
+    def __init__(self, parent, *args, **kwargs):
+        kwargs = {'bg':'light yellow', 'activebackground':'light yellow', 
+                    'onvalue':True, 'offvalue':False, **kwargs}
+        super().__init__(parent, *args, **kwargs)
+
 class BoundedFrame(tk.Frame):
     '''
         Expands to given dimensions but no further.
