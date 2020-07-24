@@ -14,7 +14,7 @@ def load_extension():
     sys.path.insert(0, ext_directory)
 
     tk.Tk().withdraw()
-    full_path = askopenfilename(filetypes=[("Python", '*.py')])
+    full_path = askopenfilename(initialdir=sys.path[0], filetypes=[("Python", '*.py')])
     filename = os.path.basename(full_path)
 
     extension = __import__(filename.replace('.py', ''))
