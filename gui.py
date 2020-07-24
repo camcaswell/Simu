@@ -30,6 +30,8 @@ class MainWindow(tk.Tk):
         self.world_state = None
         self.running = False
 
+        self.show_percep = False
+
         # Initial size and placement
         monitor_width = self.winfo_screenwidth()
         monitor_height = self.winfo_screenheight()
@@ -54,14 +56,16 @@ class MainWindow(tk.Tk):
 
         self.extensions_panel = ScrollFrame(main_tab, bg='#73543F', relief='ridge', bd=2, width=50, pady=10)
         self.map_panel = WorldMap(main_tab, bg='#9CB466')
+        self.below_map = tk.Frame(self.map_panel, bg='#556144')
 
         self.map_panel.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
         self.extensions_panel.grid(row=0, column=1, sticky='n', padx=2, pady=2)
+        self.below_map.grid(row=1, column=0, sticky='nw')
 
         # Map Control
 
-        self.map_controls = tk.Frame(self.map_panel, bg='#73543F', relief='ridge', bd=2)
-        self.map_controls.grid(row=1, column=0, sticky='nw', pady=(4,0))
+        self.map_controls = tk.Frame(self.below_map, bg='#73543F', relief='ridge', bd=2)
+        self.map_controls.grid(row=0, column=0, sticky='nw', pady=(4,0))
 
         self.load_button = StyledButton(self.map_controls, text="Load world", command=lambda: self.load_world())
         self.play_button = StyledButton(self.map_controls, text="▶", command=lambda: self.play_pause())
@@ -72,6 +76,14 @@ class MainWindow(tk.Tk):
         self.play_button.grid(row=0, column=1, pady=2)
         self.step_button.grid(row=0, column=2, pady=2)
         self.test_button.grid(row=0, column=3, padx=(10,2), pady=2)
+
+        # Map Options
+
+        self.map_options = tk.Frame(self.below_map, bg='#73543F', relief='ridge', bd=2)
+        self.map_options.grid(row=0, column=1, sticky='nw', padx=10, pady=(4,0))
+
+        self.circles_check = StyledCheckbutton(self.map_options, text="Show perception ranges", variable=self.show_percep)
+        self.circles_check.grid(row=0, column=0, padx=2, pady=2)
 
         # Extensions Panel
         self.world_box = tk.LabelFrame(self.extensions_panel, text="WORLD", padx=2, pady=2, height=20, bg='blue')
@@ -190,7 +202,8 @@ class MainWindow(tk.Tk):
         x -= diam/2
         y -= diam/2
         canvas.create_rectangle(x, y, x+diam, y+diam, fill=color, outline=color, tags='critter')
-        canvas.create_circle(x, y, critter.per_food, tags='critter')
+        if self.show_percep:
+            canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
         canvas = self.map_panel.canvas
