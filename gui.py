@@ -29,8 +29,8 @@ class MainWindow(tk.Tk):
         # Control state
         self.world_state = None
         self.running = False
-
-        self.show_percep = False
+        self.show_percep = tk.BooleanVar()
+        self.show_percep.set(False)
 
         # Initial size and placement
         monitor_width = self.winfo_screenwidth()
@@ -63,7 +63,6 @@ class MainWindow(tk.Tk):
         self.below_map.grid(row=1, column=0, sticky='nw')
 
         # Map Control
-
         self.map_controls = tk.Frame(self.below_map, bg='#73543F', relief='ridge', bd=2)
         self.map_controls.grid(row=0, column=0, sticky='nw', pady=(4,0))
 
@@ -78,7 +77,6 @@ class MainWindow(tk.Tk):
         self.test_button.grid(row=0, column=3, padx=(10,2), pady=2)
 
         # Map Options
-
         self.map_options = tk.Frame(self.below_map, bg='#73543F', relief='ridge', bd=2)
         self.map_options.grid(row=0, column=1, sticky='nw', padx=10, pady=(4,0))
 
@@ -202,7 +200,7 @@ class MainWindow(tk.Tk):
         x -= diam/2
         y -= diam/2
         canvas.create_rectangle(x, y, x+diam, y+diam, fill=color, outline=color, tags='critter')
-        if self.show_percep:
+        if self.show_percep.get():
             canvas.create_circle(x, y, critter.per_food, tags='critter')
 
     def draw_food(self, food):
